@@ -59,7 +59,7 @@
     <parent link="robot_link0"/>
     <child link="robot_link1"/>
     <axis xyz="0 0 1"/>
-    <limit effort="400" lower="0.0" upper="2.15" velocity="0.3"/>
+    <limit effort="1222" lower="0.0" upper="2.15" velocity="0.3"/>
   </joint>
   <!-- link2 -->
   <link name="robot_link2">
@@ -86,7 +86,7 @@
     <parent link="robot_link1"/>
     <child link="robot_link2"/>
     <axis xyz="0 0 1"/>
-    <limit effort="400" lower="-1.66" upper="1.66" velocity="4.147"/>
+    <limit effort="160" lower="-1.66" upper="1.66" velocity="4.147"/>
   </joint>
   <!-- link3 -->
   <link name="robot_link3">
@@ -114,7 +114,7 @@
     <parent link="robot_link2"/>
     <child link="robot_link3"/>
     <axis xyz="0 0 1"/>
-    <limit effort="400" lower="-2.6" upper="2.6" velocity="3.665"/>
+    <limit effort="84" lower="-2.6" upper="2.6" velocity="3.665"/>
   </joint>
   <!-- link4 -->
   <link name="robot_link4">
@@ -143,7 +143,7 @@
     <parent link="robot_link3"/>
     <child link="robot_link4"/>
     <axis xyz="0 0 1"/>
-    <limit effort="400" lower="-3.32" upper="3.32" velocity="4.974"/>
+    <limit effort="30" lower="-3.32" upper="3.32" velocity="4.974"/>
   </joint>
   <!-- link5 -->
   <link name="robot_link5">
@@ -172,7 +172,7 @@
     <parent link="robot_link4"/>
     <child link="robot_link5"/>
     <axis xyz="0 0 1"/>
-    <limit effort="60" lower="-1.60" upper="1.85" velocity="1.623"/>
+    <limit effort="528" lower="-1.60" upper="1.85" velocity="1.623"/>
   </joint>
   <!-- link6 -->
   <link name="robot_link6"/>
@@ -183,7 +183,7 @@
     <parent link="robot_link5"/>
     <child link="robot_link6"/>
     <axis xyz="0 0 1"/>
-    <limit effort="60" lower="-3.32" upper="3.32" velocity="3.665"/>
+    <limit effort="84" lower="-3.32" upper="3.32" velocity="3.665"/>
   </joint>
   <!-- gripper -->
   <link name="robot_gripper">
