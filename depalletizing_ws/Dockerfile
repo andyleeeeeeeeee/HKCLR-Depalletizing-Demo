@@ -44,7 +44,10 @@ RUN apt-get update && apt-get install -y \
     ros-melodic-actionlib \
     ros-melodic-actionlib-tutorials \
     ros-melodic-control-msgs \
-    ros-melodic-roscpp \    
+    ros-melodic-roscpp \
+    ros-melodic-behaviortree-cpp-v3 \
+    ros-melodic-ros-control \
+    ros-melodic-ros-controllers \    
     && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /root/catkin_ws/src && cd /root/catkin_ws
@@ -58,7 +61,9 @@ SHELL ["/bin/bash", "-c"]
 RUN source /opt/ros/melodic/setup.bash \
     && cd /root/catkin_ws && catkin_make
 
+
 RUN echo "source /root/catkin_ws/devel/setup.bash" >> /root/.bashrc
+ENV PYTHONPATH "${PYTHONPATH}:/root/catkin_ws/src"
 
 EXPOSE 11311
 

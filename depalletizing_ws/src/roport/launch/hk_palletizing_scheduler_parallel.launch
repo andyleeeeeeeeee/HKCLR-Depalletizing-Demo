@@ -1,0 +1,35 @@
+<launch>
+
+  <arg name="is_box_mixed" default="true"/>
+  <arg name="is_small_box" default="true"/>
+
+
+  <group if="$(arg is_box_mixed)">
+     <node pkg="roport" type="roport_task_scheduler" name="roport_task_scheduler1" output="screen">
+      <param name="tree_file" value="$(find roport)/tree/hkcenter_sim_static_collision_mixed_robot.xml" />
+     </node>
+     <node pkg="roport" type="roport_task_scheduler" name="roport_task_scheduler2" output="screen">
+      <param name="tree_file" value="$(find roport)/tree/hkcenter_sim_static_collision_mixed_sensing.xml" />
+     </node>
+  </group>
+
+   <group unless="$(arg is_box_mixed)">
+     <group if="$(arg is_small_box)">
+       <node pkg="roport" type="roport_task_scheduler" name="roport_task_scheduler1" output="screen">
+          <param name="tree_file" value="$(find roport)/tree/hkcenter_sim_static_collision_small_robot.xml" />
+       </node>
+       <node pkg="roport" type="roport_task_scheduler" name="roport_task_scheduler2" output="screen">
+          <param name="tree_file" value="$(find roport)/tree/hkcenter_sim_static_collision_small_sensing.xml" />
+       </node>
+     </group>
+
+     <group unless="$(arg is_small_box)">
+       <node pkg="roport" type="roport_task_scheduler" name="roport_task_scheduler1" output="screen">
+          <param name="tree_file" value="$(find roport)/tree/hkcenter_sim_static_collision_large_robot.xml" />
+       </node>
+       <node pkg="roport" type="roport_task_scheduler" name="roport_task_scheduler2" output="screen">
+          <param name="tree_file" value="$(find roport)/tree/hkcenter_sim_static_collision_large_sensing.xml" />
+       </node>
+     </group>
+   </group>
+</launch>

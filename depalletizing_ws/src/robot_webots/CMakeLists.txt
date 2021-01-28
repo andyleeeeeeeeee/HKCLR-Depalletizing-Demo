@@ -12,14 +12,14 @@ catkin_package()
 
 install(DIRECTORY launch DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
-catkin_install_python(PROGRAMS scripts/joint_state_publisher.py
-        DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+# catkin_install_python(PROGRAMS scripts/joint_state_publisher.py
+#         DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
-catkin_install_python(PROGRAMS scripts/trajectory_follower.py
-        DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+# catkin_install_python(PROGRAMS scripts/trajectory_follower.py
+#         DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
-catkin_install_python(PROGRAMS scripts/robots_ros.py
-        DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+# catkin_install_python(PROGRAMS scripts/robots_ros.py
+#         DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
-catkin_install_python(PROGRAMS scripts/webots_launcher.py
-        DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+# catkin_install_python(PROGRAMS scripts/webots_launcher.py
+#         DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

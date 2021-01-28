@@ -1,0 +1,21 @@
+# For each activated group in MoveIt,
+# give its name, goal, stamp (time to reach goal),
+# and tolerance of reaching goal.
+# If is_absolute, the goal is relevant to user
+# defined reference link (such as base_link),
+# otherwise, it is relevant to eef.
+# The goals and stamps should be given in the same
+# order as group_names. If group_names are not given,
+# default values and the order for creating the server
+# will be used.
+
+std_msgs/Header header
+string[] group_names
+bool is_absolute
+geometry_msgs/PoseArray goals
+float64[] stamps
+bool allow_collision
+---
+uint8 SUCCEEDED=0
+uint8 FAILED=1
+uint8 result_status

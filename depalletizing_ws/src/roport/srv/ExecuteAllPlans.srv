@@ -1,0 +1,10 @@
+std_msgs/Header header
+string[] group_names
+bool is_absolute
+geometry_msgs/PoseArray[] all_poses
+float64[] stamps
+bool allow_collision
+---
+uint8 SUCCEEDED=0
+uint8 FAILED=1
+uint8 result_status

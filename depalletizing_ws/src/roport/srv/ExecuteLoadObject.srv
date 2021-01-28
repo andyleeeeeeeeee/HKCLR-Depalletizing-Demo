@@ -1,0 +1,9 @@
+std_msgs/Header header
+
+# Note on type (int):
+# <0 unload, 0 random load, 1 load large, 2 load small
+int32 type
+---
+uint8 SUCCEEDED=0
+uint8 FAILED=1
+uint8 result_status
