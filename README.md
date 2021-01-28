@@ -4,14 +4,34 @@ Control algorithm of a self-developed depalletizing robot
 If you have Docker engine, you can skip 'Pre-requisites' and 'Install'. you can start from 'Docker Image' to build the [Dockerfile](Dockerfile) as a Docker Image and run this repo in a Docker container. If you prefer to use this repo without Docker engine, you can ignore Dockerfile and you have to meet the Pre-requests as below: 
 ## Pre-requests
  - Ubuntu 18.04
- - ROS Melodic-moveit
- - Webots 2020b-rev1 or newer version
+ - ROS Melodic
+ - Webots 2020b-rev1 or newer version:  
+   If you are new to Webots, copy the link below in a web browser such as Google Chrome, and download the Webots debian package, open it and click 'install'.
+   `````
+   https://github.com/cyberbotics/webots/releases/download/R2020b-rev1/webots_2020b-rev1_amd64.deb
+   `````
+- Dependence:
+````
+  sudo apt-get update && apt-get install -y \
+    ros-melodic-moveit \
+    ros-melodic-actionlib \
+    ros-melodic-actionlib-tutorials \
+    ros-melodic-control-msgs \
+    ros-melodic-roscpp \
+    ros-melodic-behaviortree-cpp-v3 \
+    ros-melodic-ros-control \
+    ros-melodic-ros-controllers \  
+````
 ## Install
 1. Compile this under workspace `~/HKCLR-Depalletizing-Demo/depalletizing_ws`
 ````
 catkin_make
 ````
-2. Add 'source' to .bashrc
+2. Add 'export' to .bashrc
+````
+export PYTHONPATH=${PYTHONPATH}:~/HKCLR-Depalletizing-Demo/depalletizing_ws/src
+````
+3. Add 'source' to .bashrc
 ````
 source ~/HKCLR-Depalletizing-Demo/depalletizing_ws/devel/setup.bash
 ````
@@ -83,6 +103,14 @@ roslaunch robot_webots robot_webots_simulation.launch
 roslaunch robot_controller moveit_group.launch use_sim_time:=true
 ````
 Now you can control SelfRobot in Webots by MontionPlanning Plugin in Rviz
+### Launch a small demo with collision free planning
+````
+roslaunch roport robot_minimal_demo.launch
+````
+or Without collision free
+````
+roslaunch roport test.launch
+````
 ### Other complex function is still being developing
 
 ## Real Robot
