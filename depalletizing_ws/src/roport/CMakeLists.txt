@@ -52,30 +52,22 @@ add_message_files(
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
-  GetAllNames.srv
+  GetPointCloud.srv
   GetGroupPose.srv
   GetGroupJointStates.srv
-  ExecuteConveyorCmd.srv
-  ExecuteLoadObject.srv
   ExecutePlanning.srv
   ExecuteSuction.srv
   ExecuteGroupPose.srv
   ExecuteGroupManyPoses.srv
-  ExecuteGroupPosition.srv
   ExecuteGroupShift.srv
   ExecuteGroupJointStates.srv
-  ExecuteGroupNamedStates.srv
-  ExecuteGroupPlan.srv
   TypeInPose.srv
   ConnectWaypoints.srv
-  ExecuteAllPoses.srv
-  ExecuteAllPlans.srv
   ExecuteAddBox.srv
   ExecuteAddPlane.srv
   ExecuteRemoveObject.srv
   ExecuteAttachBox.srv
   ExecuteDetachObject.srv
-  SenseObjectExist.srv
   SenseObjectPose.srv
   FetchDetectedInfo.srv
   StoreDetectedInfo.srv
@@ -93,6 +85,7 @@ generate_messages(
   DEPENDENCIES
   std_msgs
   geometry_msgs
+  sensor_msgs
 )
 
 ################################################

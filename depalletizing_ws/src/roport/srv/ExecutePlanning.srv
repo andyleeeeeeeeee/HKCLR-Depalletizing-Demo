@@ -7,6 +7,5 @@ uint8 FAILED=1
 uint8 result_status
 geometry_msgs/Pose pre_pick_pose
 geometry_msgs/Pose pick_pose
-geometry_msgs/Pose pre_place_pose
+geometry_msgs/Pose middle_pose
 geometry_msgs/Pose place_pose
-geometry_msgs/Pose place_obj_pose

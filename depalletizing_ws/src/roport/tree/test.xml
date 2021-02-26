@@ -4,13 +4,14 @@
     <BehaviorTree ID="BehaviorTree">
         <Sequence name="Robot Minimal Demo">
             <Sequence name="add collisions">
+                <Action ID="ExecuteRemoveObject" is_exact="1" obj_name="collision1" service_name="execute_remove_object"/>
                 <Action ID="TypeInPose" pose_on_blackboard="{motion2}" service_name="type_in_pose" type_in_pose="1.3929 0 2.2637 0.7071 0 0.7071 0"/>
                 <Action ID="ExecuteGroupLinearJointStates" goal="0 0 0 0 0 0" group_name="arm" name="home" service_name="execute_group_joint_states" tolerance="0.001"/>
                 <ForceSuccess>
                     <Action ID="ExecuteGroupLinearJointStates" goal="0.2 0 0 0 0 0" group_name="arm" name="motion0" service_name="execute_group_joint_states" tolerance="0.001"/>
                 </ForceSuccess>
             </Sequence>
-            <Repeat num_cycles="5">
+            <Repeat num_cycles="3">
                 <Sequence>
                     <ForceSuccess>
                         <Action ID="ExecuteGroupLinearJointStates" goal="0.1666 -0.8221 0.5915 0.2303 1.5707 0.0" group_name="arm" name="mothion1" service_name="execute_group_joint_states" tolerance="0.001"/>
@@ -85,7 +86,7 @@
         </Action>
         <Action ID="ExecuteGroupAngularJointStates">
             <input_port default="0 0 0 0 0 0 0" name="goal"/>
-            <input_port default="panda_arm" name="group_name"/>
+            <input_port default="arm" name="group_name"/>
             <input_port default="execute_group_joint_states" name="service_name"/>
             <input_port default="0.01" name="tolerance"/>
         </Action>
@@ -113,10 +114,10 @@
             <input_port default="2" name="stamp">Time stamp of the last pose in plan</input_port>
         </Action>
         <Action ID="ExecuteGroupPose">
-            <input_port name="constraint">If 'r', 'p', or 'y' is given, the eef_frame should not rotate about itself along x-, y-, or z-axis. You can combine them like 'rp', 'ry', 'py', and 'rpy'. Default ''</input_port>
+            <input_port name="constraint"/>
             <input_port default="0 0 0 0 0 0 1" name="goal"/>
-            <input_port default="0" name="goal_type">0: Pose wrt the global base frame (robot base); 1: Pose wrt the base frame transferred to current eef base position; 2: pose wrt the eef frame</input_port>
-            <input_port default="arm" name="group_name">The group providing the reference frame</input_port>
+            <input_port default="0" name="goal_type"/>
+            <input_port default="arm" name="group_name"/>
             <input_port default="execute_group_pose" name="service_name"/>
             <input_port default="0.01" name="tolerance"/>
         </Action>

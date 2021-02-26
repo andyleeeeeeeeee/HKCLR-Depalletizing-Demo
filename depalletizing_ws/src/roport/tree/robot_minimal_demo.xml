@@ -7,9 +7,13 @@
                 <Action ID="ExecuteGroupLinearJointStates" goal="0 0 0 0 0 0" group_name="arm" name="home" service_name="execute_group_joint_states" tolerance="0.001"/>
                 <Action ID="ExecuteAddPlane" group_name="arm" name="Add groud to scene" plane_name="ground" plane_normal="0 0 1" plane_pose="0 0 0 0 0 0 1" service_name="execute_add_plane"/>
                 <Action ID="ExecuteAddBox" auto_subfix="0" box_name="collision1" box_pose="1 -0.2 1.2 0 0 0 1" box_size="0.2 0.2 0.2" group_name="arm" is_absolute="1" name="Add collision object" service_name="execute_add_box"/>
+                <Action ID="ExecuteAddBox" auto_subfix="1" box_name="left_wall" box_pose="2.76 1.2 1.35 0 0 0 1" box_size="5.0 0.001 2.7" group_name="arm" is_absolute="1" name="Add left wall" service_name="execute_add_box"/>
+                <Action ID="ExecuteAddBox" auto_subfix="1" box_name="right_wall" box_pose="2.76 -1.2 1.35 0 0 0 1" box_size="5.0 0.001 2.7" group_name="arm" is_absolute="1" name="Add right wall" service_name="execute_add_box"/>
+                <Action ID="ExecuteAddBox" auto_subfix="1" box_name="top_wall" box_pose="4 0 2.7 0 0 0 1" box_size="2 2.4 0.001" group_name="arm" is_absolute="1" name="Add top wall" service_name="execute_add_box"/>
+                <Action ID="ExecuteAddBox" auto_subfix="1" box_name="conveyor" box_pose="-1.74 0 0.25 0 0 0 1" box_size="2.5 0.5 0.5" group_name="arm" is_absolute="1" name="Add conveyor" service_name="execute_add_box"/>
             </Sequence>
             <Delay delay_msec="500">
-                <Repeat num_cycles="5">
+                <Repeat num_cycles="3">
                     <Sequence>
                         <Action ID="ExecuteGroupLinearJointStates" goal="0.1666 -0.8221 0.5915 0.2303 1.5707 0.0" group_name="arm" name="mothion1 joint goal" service_name="execute_group_joint_states" tolerance="0.001"/>
                         <Action ID="ExecuteGroupPose" constraint="" goal="1.1655 0.2865 1.0726 1 -0.001 0 0" goal_type="0" group_name="arm" service_name="execute_group_pose" tolerance="0.01"/>
@@ -45,22 +49,6 @@
             <input_port default="0 0 0 0 0 0 1" name="plane_pose">Pose</input_port>
             <input_port default="execute_add_plane" name="service_name"/>
         </Action>
-        <Action ID="ExecuteAllPlans">
-            <input_port default="0 0 0 0 0 0 1" name="all_poses">Poses for each group to visit, seperate with | for different groups</input_port>
-            <input_port default="0" name="allow_collision"/>
-            <input_port default="panda_arm" name="group_names"/>
-            <input_port default="0" name="is_absolute"/>
-            <input_port default="execute_all_plans" name="service_name"/>
-            <input_port default="1" name="stamps"/>
-        </Action>
-        <Action ID="ExecuteAllPoses">
-            <input_port default="0" name="allow_collision"/>
-            <input_port default="0 0 0 0 0 0 1" name="goals">Goals for each group to reach, seperate with ;</input_port>
-            <input_port default="panda_arm" name="group_names">Names of groups to control, seperate with space</input_port>
-            <input_port default="0" name="is_absolute"/>
-            <input_port default="execute_all_poses" name="service_name"/>
-            <input_port default="1" name="stamps">Time stamps for each group reaching the goal, seperate with space</input_port>
-        </Action>
         <Action ID="ExecuteAttachBox">
             <input_port name="box_name"/>
             <input_port name="box_pose"/>
@@ -68,11 +56,6 @@
             <input_port default="gripper" name="eef_group_name"/>
             <input_port default="arm" name="group_name"/>
             <input_port default="execute_attach_box" name="service_name"/>
-        </Action>
-        <Action ID="ExecuteConveyorCmd">
-            <input_port default="0" name="enable"/>
-            <input_port default="execute_conveyor_cmd" name="service_name"/>
-            <input_port default="2.0" name="speed"/>
         </Action>
         <Action ID="ExecuteDetachObject">
             <input_port default="arm" name="group_name"/>
@@ -100,14 +83,6 @@
             <input_port default="execute_group_many_poses" name="service_name"/>
             <input_port default="0.01" name="tolerance"/>
         </Action>
-        <Action ID="ExecuteGroupPlan">
-            <input_port default="0" name="allow_collision"/>
-            <input_port default="panda_arm" name="group_name"/>
-            <input_port default="0" name="is_absolute"/>
-            <input_port default="0 0 0.1 0 0 0 1;0 0 -0.1 0 0 0 1" name="poses">Trajectory poses in plan. Each pose is relevant to the last pose.</input_port>
-            <input_port default="execute_group_plan" name="service_name"/>
-            <input_port default="2" name="stamp">Time stamp of the last pose in plan</input_port>
-        </Action>
         <Action ID="ExecuteGroupPose">
             <input_port name="constraint">If 'r', 'p', or 'y' is given, the eef_frame should not rotate about itself along x-, y-, or z-axis. You can combine them like 'rp', 'ry', 'py', and 'rpy'. Default ''</input_port>
             <input_port default="0 0 0 0 0 0 1" name="goal"/>
@@ -116,13 +91,6 @@
             <input_port default="execute_group_pose" name="service_name"/>
             <input_port default="0.01" name="tolerance"/>
         </Action>
-        <Action ID="ExecuteGroupPosition">
-            <input_port default="0 0 0" name="goal"/>
-            <input_port default="arm" name="group_name"/>
-            <input_port default="0" name="is_absolute"/>
-            <input_port default="execute_group_position" name="service_name"/>
-            <input_port default="0.005" name="tolerance"/>
-        </Action>
         <Action ID="ExecuteGroupShift">
             <input_port default="z" name="axis">Could be x y z roll pitch yaw</input_port>
             <input_port default="0" name="goal"/>
@@ -130,10 +98,6 @@
             <input_port default="0" name="is_absolute"/>
             <input_port default="execute_group_shift" name="service_name"/>
             <input_port default="0.01" name="tolerance"/>
-        </Action>
-        <Action ID="ExecuteLoadObject">
-            <input_port default="execute_load_object" name="service_name"/>
-            <input_port default="0" name="type">&lt;0 unload, 0 load random, &gt;=1 load obj id=type</input_port>
         </Action>
         <Action ID="ExecutePlanning">
             <input_port default="0" name="category">0 for large box, 1 for small box</input_port>
@@ -158,10 +122,6 @@
             <output_port name="category">String, 0 for large box, 1 for small box</output_port>
             <output_port name="pose">Pose</output_port>
             <input_port default="fetch_detected_info" name="service_name"/>
-        </Action>
-        <Action ID="SenseObjectExist">
-            <input_port default="3" name="duration"/>
-            <input_port default="sense_object_exist" name="service_name">Success if object exist, fail elsewise</input_port>
         </Action>
         <Action ID="SenseObjectPose">
             <output_port name="category">String, 0 for large box, 1 for small box</output_port>
