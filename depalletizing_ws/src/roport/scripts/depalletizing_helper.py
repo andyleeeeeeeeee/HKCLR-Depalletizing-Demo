@@ -33,78 +33,68 @@ class NaiveDepalletizingPlanner(object):
 
     def picking_plan(self, obj_pose):
         # the box comes from whether the left or right side
-        if obj_pose[0:3, 1] >= 0:
+        if obj_pose[1, 3] >= 0:
             self.pick_from_left = True
         else: 
             self.pick_from_left = False
         
-        # do some picking point planning  
-        tcp_pose = transform.identity_matrix()
-        angle, _, _ = transform.rotation_from_matrix(obj_pose)
-        if -np.pi * 0.5 <= angle <= np.pi * 0.5:
-            tcp_pose[0:3, 0] = obj_pose[0:3, 0]  # tcp.x = obj.x
-            tcp_pose[0:3, 1] = -obj_pose[0:3, 1]  # tcp.y = -obj.y
-        else:
-            tcp_pose[0:3, 0] = -obj_pose[0:3, 0]  # tcp.x = -obj.x
-            tcp_pose[0:3, 1] = obj_pose[0:3, 1]  # tcp.y = obj.y
+        # do some picking point planning
+            # for simulation only
+        tcp_pose = obj_pose
+            # for real robot need to be done in the future
+        # tcp_pose = transform.identity_matrix()
+        # angle, _, _ = transform.rotation_from_matrix(obj_pose)
+        # if -np.pi * 0.5 <= angle <= np.pi * 0.5:
+        #     tcp_pose[0:3, 0] = obj_pose[0:3, 0]  # tcp.x = obj.x
+        #     tcp_pose[0:3, 1] = -obj_pose[0:3, 1]  # tcp.y = -obj.y
+        # else:
+        #     tcp_pose[0:3, 0] = -obj_pose[0:3, 0]  # tcp.x = -obj.x
+        #     tcp_pose[0:3, 1] = obj_pose[0:3, 1]  # tcp.y = obj.y
 
-        tcp_pose[0:3, 2] = -obj_pose[0:3, 2]  # tcp.z = -obj.z
+        # tcp_pose[0:3, 2] = -obj_pose[0:3, 2]  # tcp.z = -obj.z
         
         # make sure the vacuum could touch the box
         # offset = -0.02  
         # tcp_pose[0:3, 3] = obj_pose[0:3, 3] + np.array([0, 0, offset])
-        return to_ros_pose(tcp_pose)
 
-    def middle_plan(self):
-        middle_pose = Pose()
+        pick_tcp_pose = to_ros_pose(tcp_pose)
+        # rospy.logwarn('pick_tcp_pose is ' + str(pick_tcp_pose) + '!!!!!')
+        pre_pick_offset = get_param('pre_pick_offset', [-0.1, 0, 0])
+        pre_pick_tcp_pose = offset_ros_pose(pick_tcp_pose, pre_pick_offset)
+        # rospy.logwarn('pre_pick_tcp_pose is ' + str(pre_pick_tcp_pose) + '!!!!!')
+        # pull out planning
+        post_pick_offset = get_param('post_pick_offset', [-0.4, 0, 0.1])
+        if abs(obj_pose[1, 3]) >= 0.5:
+            post_pick_tcp_pose = offset_ros_pose(pick_tcp_pose, post_pick_offset)
+        else:
+            if self.pick_from_left:
+                post_pick_offset[1] += 0.3
+            else:
+                post_pick_offset[1] -= 0.3
+            post_pick_tcp_pose = offset_ros_pose(pick_tcp_pose, post_pick_offset)                                
+        return pick_tcp_pose, pre_pick_tcp_pose, post_pick_tcp_pose
+
+    def middle_plan(self, obj_pose):
         # if pick from left side, we'd better to place the box from right side.
         if self.pick_from_left:
-            pose = get_param('right_middle_pose')
-            middle_pose.pose.position.x = pose[0]
-            middle_pose.pose.position.y = pose[1]
-            middle_pose.pose.position.z = pose[2]
-            middle_pose.pose.orientation.x = pose[3]
-            middle_pose.pose.orientation.y = pose[4]
-            middle_pose.pose.orientation.z = pose[5]
-            middle_pose.pose.orientation.w = pose[6]
-            self.right_middle_pose = middle_pose
+            pre_middle_pose = get_param('pre_middle_left', [0.0829, -1.7568, 2.5506, 0.7786, -1.5734, -0.0038])
+            post_middle_pose = get_param('post_middle_left', [0.7015,0.4237,1.7017,-0.0747,-0.0040,-0.0806])
         # vise versa
         else:
-            pose = get_param('left_middle_pose')
-            middle_pose.pose.position.x = pose[0]
-            middle_pose.pose.position.y = pose[1]
-            middle_pose.pose.position.z = pose[2]
-            middle_pose.pose.orientation.x = pose[3]
-            middle_pose.pose.orientation.y = pose[4]
-            middle_pose.pose.orientation.z = pose[5]
-            middle_pose.pose.orientation.w = pose[6]
-            self.left_middle_pose = middle_pose
-        return middle_pose
-                        
-            
+            pre_middle_pose = get_param('pre_middle_right', [0.0777, 1.8904, -2.4741, -0.9875, 1.5718, -0.0037])
+            post_middle_pose = get_param('post_middle_right', [0.7015,-0.4631,-1.6642, -1.0472, 0.0081, -0.0615])
+        if obj_pose[2, 3] >= 1.3:
+            pre_middle_pose[0] += 1.0
+        return pre_middle_pose, post_middle_pose
+                                    
 
     def placing_plan(self):
-        place_pose = Pose()
         # if pick from left side, we'd better to place the box from right side.
         if self.pick_from_left:
-            pose = get_param('right_place_pose')
-            place_pose.position.x = pose[0]
-            place_pose.position.y = pose[1]
-            place_pose.position.z = pose[2]
-            place_pose.orientation.x = pose[3]
-            place_pose.orientation.y = pose[4]
-            place_pose.orientation.z = pose[5]
-            place_pose.orientation.w = pose[6]
+            place_pose = get_param('place_left', [0.7005, 1.8997, 2.0341, 0.8173, 0.0009, -0.0041])
         # vise versa
         else:
-            pose = get_param('left_place_pose')
-            place_pose.position.x = pose[0]
-            place_pose.position.y = pose[1]
-            place_pose.position.z = pose[2]
-            place_pose.orientation.x = pose[3]
-            place_pose.orientation.y = pose[4]
-            place_pose.orientation.z = pose[5]
-            place_pose.orientation.w = pose[6]
+            place_pose = get_param('place_right', [0.7015, -1.8999, -2.0660, -0.7844, 0.0080, -0.0615])
         return place_pose
 
 
@@ -130,21 +120,21 @@ class DepalletizingHelper(object):
         self.sim_delete_box_client = self._create_client(
             '/supervisor/delete_box', Trigger)
         self.sim_get_position_client = self._create_client(
-            '/supervisor/get_position', node_get_position)
+            '/supervisor/get_position', NodeGetPosition)
         self.sim_get_orientation_client = self._create_client(
-            '/supervisor/get_orientation', node_get_orientation)
+            '/supervisor/get_orientation', NodeGetOrientation)
         self.sim_set_position_client = self._create_client(
-            '/supervisor/set_position', field_set_vec3f)
+            '/supervisor/set_position', FieldSetVec3f)
         self.sim_set_rotation_client = self._create_client(
-            '/supervisor/set_orientation', field_set_rotation)
+            '/supervisor/set_orientation', FieldSetRotation)
         self.sim_run_gripper_client = self._create_client(
             '/gripper/run', SetBool)
 
         # Clients for querying services provided by real devices
         self.get_pointcloud_client = self._create_client(
             '/hv1000/get_pointcloud', GetPointCloud, False)
-        self.get_object_info_client = self._create_client(
-            '/vision/get_object_info', GetObjectPose, False)
+        # self.get_object_info_client = self._create_client(
+        #     '/vision/get_object_info', GetObjectPose, False)
         self.run_gripper_client = self._create_client(
             '/gripper/run', SetBool, False)
         self.get_tcp_pose_client = self._create_client(
@@ -205,6 +195,10 @@ class DepalletizingHelper(object):
                 return resp
         if self.sim_run_gripper_client in self.enabled_clients:
             run_resp = self.sim_run_gripper_client(req.enable)
+            # delete box after drop
+            if not req.enable:
+                rospy.sleep(0.6)
+                delete_box_resp = self.sim_delete_box_client()
             if run_resp.success:
                 resp.result_status = resp.SUCCEEDED
             else:
@@ -241,21 +235,24 @@ class DepalletizingHelper(object):
         """
         obj_pose = sd_pose(req.pose)
         # plan pick
-        pick_tcp_pose = self.planner.picking_plan(obj_pose)
-        pre_pick_offset = get_param('pre_pick_offset', [-0.2, 0, 0])
-        pre_pick_tcp_pose = offset_ros_pose(pick_tcp_pose, pre_pick_offset)
-        
+        pick_tcp_pose, pre_pick_tcp_pose, post_pick_tcp_pose = self.planner.picking_plan(obj_pose)
+
         # plan middle
-        middle_tcp_pose = self.planner.middle_plan()
+        pre_middle_pose, post_middle_pose = self.planner.middle_plan(obj_pose)
     
         # plan place
-        place_tcp_pose = self.planner.placing_plan()
+        place_pose = self.planner.placing_plan()
 
         resp = ExecutePlanningResponse()
-        resp.pick_pose = pick_tcp_pose
+        # Double array
+        resp.pre_middle_pose = pre_middle_pose
+        # Pose
         resp.pre_pick_pose = pre_pick_tcp_pose
-        resp.middle_pose = middle_tcp_pose
-        resp.place_pose = place_tcp_pose
+        resp.pick_pose = pick_tcp_pose
+        resp.post_pick_pose = post_pick_tcp_pose
+        # Double array
+        resp.post_middle_pose = post_middle_pose
+        resp.place_pose = place_pose
         return resp
 
     def sense_object_pose_handle(self, req):

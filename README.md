@@ -94,6 +94,9 @@ docker exec -it hkclr_robot_interface bash
 ## Usage
 No matter whether you use or not use docker, following part are the same.
 ## Simulation
+````
+source setup.bash
+````
 ### Launch webots world with SelfRobot and its drivers
 ````
 roslaunch robot_webots robot_webots_simulation.launch

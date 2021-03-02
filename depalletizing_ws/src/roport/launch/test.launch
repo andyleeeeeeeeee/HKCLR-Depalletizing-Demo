@@ -1,5 +1,6 @@
 <launch>
-    <param name="/use_sim_time" value="true" />
+    <arg name="use_sim_time" default="true" />
+    <param name="/use_sim_time" value="$(arg use_sim_time)" />
 
     <node pkg="roport" type="roport_moveit_server.py" name="roport_moveit_server" output="screen">
         <rosparam param="group_names">['arm']</rosparam>

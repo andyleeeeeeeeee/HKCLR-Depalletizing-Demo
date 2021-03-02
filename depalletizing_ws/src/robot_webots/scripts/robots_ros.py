@@ -15,6 +15,7 @@ from geometry_msgs.msg import Pose
 from robot_webots.srv import *
 
 
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--node-name', dest='nodeName',
                     default='robot_driver', help='Specifies the name of the node.')
@@ -73,15 +74,40 @@ def getObjectPose():
         r_wo = world_to_obj_r.getSFRotation()
         world_to_base_t = self_robot_.getField('translation')
         t_wb = world_to_base_t.getSFVec3f()
+        # obj_pose
         obj_pose = Pose()
+            # position
         obj_pose.position.x = t_wo[0] - t_wb[0]  # ros.x = wo.x - wb.x
         obj_pose.position.y = -(t_wo[2] - t_wb[2])    # ros.y = -(wo.z - wb.z)
         obj_pose.position.z = t_wo[1] - t_wb[1]    # ros.z = wo.y - wb.y
+            # orientation
         obj_pose.orientation.x = 0.0
         obj_pose.orientation.y = 0.0
         obj_pose.orientation.z = math.sin((r_wo[3] - math.pi/2) * 0.5)
         obj_pose.orientation.w = math.cos((r_wo[3] - math.pi/2) * 0.5)
-        return obj_pose
+
+        # surface_pose
+        surface_pose = obj_pose
+            # position
+        children_field = obj_node.getField('children')
+        Transform_node = children_field.getMFNode(-1)
+        scale_field = Transform_node.getField('scale')
+        obj_size = scale_field.getSFVec3f()
+        surface_pose.position.x -= obj_size[1] * 0.5
+            # orientation
+            # box is on the left
+        if obj_pose.position.y >= 0: 
+            surface_pose.orientation.x = 0.4979
+            surface_pose.orientation.y = 0.5006
+            surface_pose.orientation.z = 0.5000
+            surface_pose.orientation.w = 0.5012
+            # box is on the right
+        else:
+            surface_pose.orientation.x = 0.5005
+            surface_pose.orientation.y = -0.4989
+            surface_pose.orientation.z = 0.5013
+            surface_pose.orientation.w = -0.4991
+        return surface_pose
     else:
         rospy.logerr('No box in scene !!!!!!!!!!!!')
         obj_pose = Pose()

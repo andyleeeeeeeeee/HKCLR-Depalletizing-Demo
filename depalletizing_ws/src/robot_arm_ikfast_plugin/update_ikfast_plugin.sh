@@ -7,7 +7,7 @@ planning_group_name=arm
 ikfast_plugin_pkg=robot_arm_ikfast_plugin
 base_link_name=robot_bottom
 eef_link_name=tcp
-ikfast_output_path=/home/andylee/HKCLR-Depalletizing-Demo/src/robot_arm_ikfast_plugin/src/robot_arm_ikfast_solver.cpp
+ikfast_output_path=/home/andylee/ros1_ws/src/robot_arm_ikfast_plugin/src/robot_arm_ikfast_solver.cpp
 
 rosrun moveit_kinematics create_ikfast_moveit_plugin.py\
   --search_mode=$search_mode\

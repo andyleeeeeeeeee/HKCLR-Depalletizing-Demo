@@ -4,22 +4,39 @@
     <BehaviorTree ID="BehaviorTree">
         <Sequence name="Robot Minimal Demo">
             <Sequence name="add collisions">
-                <Action ID="ExecuteGroupLinearJointStates" goal="0 0 0 0 0 0" group_name="arm" name="home" service_name="execute_group_joint_states" tolerance="0.001"/>
                 <Action ID="ExecuteAddPlane" group_name="arm" name="Add groud to scene" plane_name="ground" plane_normal="0 0 1" plane_pose="0 0 0 0 0 0 1" service_name="execute_add_plane"/>
-                <Action ID="ExecuteAddBox" auto_subfix="0" box_name="collision1" box_pose="1 -0.2 1.2 0 0 0 1" box_size="0.2 0.2 0.2" group_name="arm" is_absolute="1" name="Add collision object" service_name="execute_add_box"/>
                 <Action ID="ExecuteAddBox" auto_subfix="1" box_name="left_wall" box_pose="2.76 1.2 1.35 0 0 0 1" box_size="5.0 0.001 2.7" group_name="arm" is_absolute="1" name="Add left wall" service_name="execute_add_box"/>
                 <Action ID="ExecuteAddBox" auto_subfix="1" box_name="right_wall" box_pose="2.76 -1.2 1.35 0 0 0 1" box_size="5.0 0.001 2.7" group_name="arm" is_absolute="1" name="Add right wall" service_name="execute_add_box"/>
                 <Action ID="ExecuteAddBox" auto_subfix="1" box_name="top_wall" box_pose="4 0 2.7 0 0 0 1" box_size="2 2.4 0.001" group_name="arm" is_absolute="1" name="Add top wall" service_name="execute_add_box"/>
-                <Action ID="ExecuteAddBox" auto_subfix="1" box_name="conveyor" box_pose="-1.74 0 0.25 0 0 0 1" box_size="2.5 0.5 0.5" group_name="arm" is_absolute="1" name="Add conveyor" service_name="execute_add_box"/>
+                <Action ID="ExecuteAddBox" auto_subfix="1" box_name="conveyor" box_pose="-1.341 0 0.25 0 0 0 1" box_size="2.56 0.56 0.5" group_name="arm" is_absolute="1" name="Add conveyor" service_name="execute_add_box"/>
             </Sequence>
-            <Delay delay_msec="500">
-                <Repeat num_cycles="3">
-                    <Sequence>
-                        <Action ID="ExecuteGroupLinearJointStates" goal="0.1666 -0.8221 0.5915 0.2303 1.5707 0.0" group_name="arm" name="mothion1 joint goal" service_name="execute_group_joint_states" tolerance="0.001"/>
-                        <Action ID="ExecuteGroupPose" constraint="" goal="1.1655 0.2865 1.0726 1 -0.001 0 0" goal_type="0" group_name="arm" service_name="execute_group_pose" tolerance="0.01"/>
-                    </Sequence>
-                </Repeat>
-            </Delay>
+            <Action ID="ExecuteAddBox" auto_subfix="0" box_name="boxsur" box_pose="0.901 0 1.35 0 0 0 1" box_size="0.001 2.4 2.7" group_name="arm" is_absolute="1" name="box_surface" service_name="execute_add_box"/>
+            <Repeat num_cycles="1">
+                <Sequence name="left">
+                    <Action ID="ExecuteGroupLinearJointStates" goal="0.0829 -1.7568 2.5506 0.7786 -1.5734 -0.0038" group_name="arm" name="pre middle left" service_name="execute_group_joint_states" tolerance="0.01"/>
+                    <Action ID="ExecuteRemoveObject" is_exact="1" name="remove boxes_surface" obj_name="boxsur" service_name="execute_remove_object"/>
+                    <Action ID="ExecuteGroupManyPoses" constraint="" eef_step="0.1" goal_type="0" goals="0.88 0.4994 0.5723 0.4979 0.5006 0.5000 0.5012" group_name="arm" name="pick" service_name="execute_group_many_poses" tolerance="0.01"/>
+                    <Action ID="ExecuteGroupShift" axis="z" goal="0.1" group_name="arm" is_absolute="0" name="lift up" service_name="execute_group_shift" tolerance="0.01"/>
+                    <Action ID="ExecuteGroupShift" axis="x" goal="-0.4" group_name="arm" is_absolute="0" name="pull out" service_name="execute_group_shift" tolerance="0.01"/>
+                    <Action ID="ExecuteGroupLinearJointStates" goal="0.7015 0.4237 1.7017 -0.0747 -0.0040 -0.0806" group_name="arm" name="post middle left" service_name="execute_group_joint_states" tolerance="0.01"/>
+                    <Action ID="ExecuteGroupLinearJointStates" goal="0.7005 1.8997 2.0341 0.8173 0.0009 -0.0041" group_name="arm" name="place" service_name="execute_group_joint_states" tolerance="0.01"/>
+                    <Action ID="ExecuteGroupLinearJointStates" goal="0.7015 0.4237 1.7017 -0.0747 -0.0040 -0.0806" group_name="arm" name="post middle left" service_name="execute_group_joint_states" tolerance="0.01"/>
+                    <Action ID="ExecuteAddBox" auto_subfix="0" box_name="boxsur" box_pose="0.901 0 1.35 0 0 0 1" box_size="0.001 2.4 2.7" group_name="arm" is_absolute="1" name="box_surface" service_name="execute_add_box"/>
+                </Sequence>
+            </Repeat>
+            <Repeat num_cycles="1">
+                <Sequence name="right">
+                    <Action ID="ExecuteGroupLinearJointStates" goal="0.0777 1.8904 -2.4741 -0.9875 1.5718 -0.0037" group_name="arm" name="pre middle right" service_name="execute_group_joint_states" tolerance="0.01"/>
+                    <Action ID="ExecuteRemoveObject" is_exact="1" obj_name="boxsur" service_name="execute_remove_object"/>
+                    <Action ID="ExecuteGroupManyPoses" constraint="" eef_step="0.1" goal_type="0" goals="0.88 -0.4455 0.5713 -0.5115 0.4876 -0.4901 0.5101" group_name="arm" name="pick" service_name="execute_group_many_poses" tolerance="0.01"/>
+                    <Action ID="ExecuteGroupShift" axis="z" goal="0.1" group_name="arm" is_absolute="0" name="lift up" service_name="execute_group_shift" tolerance="0.01"/>
+                    <Action ID="ExecuteGroupShift" axis="x" goal="-0.4" group_name="arm" is_absolute="0" name="pull out" service_name="execute_group_shift" tolerance="0.01"/>
+                    <Action ID="ExecuteGroupLinearJointStates" goal="0.7015 -0.4631 -1.6642 -1.0472 0.0081 -0.0615" group_name="arm" name="post middle left" service_name="execute_group_joint_states" tolerance="0.01"/>
+                    <Action ID="ExecuteGroupLinearJointStates" goal="0.7015 -1.8999 -2.0660 -0.7844 0.0080 -0.0615" group_name="arm" name="place left" service_name="execute_group_joint_states" tolerance="0.01"/>
+                    <Action ID="ExecuteGroupLinearJointStates" goal="0.7015 -0.4631 -1.6642 -1.0472 0.0081 -0.0615" group_name="arm" name="post middle left" service_name="execute_group_joint_states" tolerance="0.01"/>
+                    <Action ID="ExecuteAddBox" auto_subfix="0" box_name="boxsur" box_pose="0.901 0 1.35 0 0 0 1" box_size="0.001 2.4 2.7" group_name="arm" is_absolute="1" name="boxes_surface" service_name="execute_add_box"/>
+                </Sequence>
+            </Repeat>
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
@@ -72,7 +89,7 @@
             <input_port default="0.04 0.04" name="goal"/>
             <input_port default="hand" name="group_name"/>
             <input_port default="execute_group_joint_states" name="service_name"/>
-            <input_port default="0.001" name="tolerance"/>
+            <input_port default="0.01" name="tolerance"/>
         </Action>
         <Action ID="ExecuteGroupManyPoses">
             <input_port name="constraint">If 'r', 'p', or 'y' is given, the eef_frame should not rotate about itself along x-, y-, or z-axis. You can combine them like 'rp', 'ry', 'py', and 'rpy'. Default ''</input_port>

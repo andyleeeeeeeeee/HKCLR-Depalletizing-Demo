@@ -95,7 +95,7 @@
       <parent link="${arm_id}_link1"/>
       <child link="${arm_id}_link2"/>
       <axis xyz="0 0 1"/>
-      <limit effort="160" lower="-1.66" upper="1.66" velocity="4.147"/>
+      <limit effort="160" lower="-1.9" upper="1.9" velocity="4.147"/>
     </joint>
 
     <!-- link3 -->
@@ -151,11 +151,11 @@
     <!-- lower, upper, speed limit?  -->
     <joint name="${arm_id}_joint4" type="revolute">
       <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-3.32" soft_upper_limit="3.32"/>
-      <origin rpy="0 0 0" xyz="0.500 0 -0.187"/>
+      <origin rpy="0 0 ${pi/2}" xyz="0.500 0 -0.187"/>
       <parent link="${arm_id}_link3"/>
       <child link="${arm_id}_link4"/>
       <axis xyz="0 0 1"/>
-      <limit effort="30" lower="-3.32" upper="3.32" velocity="4.974"/>
+      <limit effort="30" lower="-2" upper="2" velocity="4.974"/>
     </joint>
 
     <!-- link5 -->
@@ -193,11 +193,11 @@
     <!-- lower, upper, speed limit?  -->
     <joint name="${arm_id}_joint6" type="revolute">
       <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-3.32" soft_upper_limit="3.32"/>
-      <origin rpy="${pi/2} 0 0" xyz="0.0 -0.120 0"/>
+      <origin rpy="${pi/2} -${pi/2} 0" xyz="0.0 -0.120 0"/>
       <parent link="${arm_id}_link5"/>
       <child link="${arm_id}_link6"/>
       <axis xyz="0 0 1"/>
-      <limit effort="84" lower="-3.32" upper="3.32" velocity="3.665"/>
+      <limit effort="84" lower="-2" upper="2" velocity="3.665"/>
     </joint>
 
     <!-- gripper -->

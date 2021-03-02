@@ -286,10 +286,12 @@ public:
         InputPort<Header>("header"),
         InputPort<Pose>("pose"),
         InputPort<std::string>("category"),
+        OutputPort<DoubleArray>("pre_middle_pose"),
         OutputPort<Pose>("pre_pick_pose"),
-        OutputPort<Pose>("middle_pose"),
         OutputPort<Pose>("pick_pose"),
-        OutputPort<Pose>("place_pose"),
+        OutputPort<Pose>("post_pick_pose"),
+        OutputPort<DoubleArray>("post_middle_pose"),
+        OutputPort<DoubleArray>("place_pose"),
     };
   }
 
@@ -303,19 +305,30 @@ public:
 
   BT::NodeStatus onResponse(const ResponseType &response) override {
     if (response.result_status == response.SUCCEEDED) {
-      Pose pick_pose{};
-      pick_pose.fromROS(response.pick_pose);
-      setOutput("pick_pose", pick_pose);
-      Pose place_pose{};
-      place_pose.fromROS(response.place_pose);
-      setOutput("place_pose", place_pose);
+      DoubleArray pre_middle_pose{};
+      pre_middle_pose.fromROS(response.pre_middle_pose);
+      setOutput("pre_middle_pose", pre_middle_pose);
+
       Pose pre_pick_pose{};
       pre_pick_pose.fromROS(response.pre_pick_pose);
       setOutput("pre_pick_pose", pre_pick_pose);
-      Pose middle_pose{};
-      middle_pose.fromROS(response.middle_pose);
-      setOutput("middle_pose", middle_pose);
 
+      Pose pick_pose{};
+      pick_pose.fromROS(response.pick_pose);
+      setOutput("pick_pose", pick_pose);
+
+      Pose post_pick_pose{};
+      post_pick_pose.fromROS(response.post_pick_pose);
+      setOutput("post_pick_pose", post_pick_pose);
+
+      DoubleArray post_middle_pose{};
+      post_middle_pose.fromROS(response.post_middle_pose);
+      setOutput("post_middle_pose", post_middle_pose);
+
+      DoubleArray place_pose{};
+      place_pose.fromROS(response.place_pose);
+      setOutput("place_pose", place_pose);
+      
       ROS_INFO("RoPort: %s response SUCCEEDED.", name_.c_str());
       return NodeStatus::SUCCESS;
     } else {
