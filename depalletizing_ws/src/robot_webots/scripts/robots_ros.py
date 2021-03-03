@@ -97,16 +97,16 @@ def getObjectPose():
             # orientation
             # box is on the left
         if obj_pose.position.y >= 0: 
-            surface_pose.orientation.x = 0.4979
-            surface_pose.orientation.y = 0.5006
-            surface_pose.orientation.z = 0.5000
-            surface_pose.orientation.w = 0.5012
+            surface_pose.orientation.x = 0.5
+            surface_pose.orientation.y = 0.5
+            surface_pose.orientation.z = 0.5
+            surface_pose.orientation.w = 0.5
             # box is on the right
         else:
-            surface_pose.orientation.x = 0.5005
-            surface_pose.orientation.y = -0.4989
-            surface_pose.orientation.z = 0.5013
-            surface_pose.orientation.w = -0.4991
+            surface_pose.orientation.x = 0.5
+            surface_pose.orientation.y = -0.5
+            surface_pose.orientation.z = 0.5
+            surface_pose.orientation.w = -0.5
         return surface_pose
     else:
         rospy.logerr('No box in scene !!!!!!!!!!!!')
@@ -212,9 +212,42 @@ def deleteBoxSrvCb(req):
         resp.success = False
     return resp
 
+# moveBase Callback
+def moveBaseSrvCb(req):
+    sf_robot_trans_field = self_robot_.getField('translation')
+    t_wb = sf_robot_trans_field.getSFVec3f()
+    # move forward
+    move_step = 0.01
+    time_interval = 0.01
+    move_times = abs(req.value) // move_step
+    rest_move = abs(req.value) % move_step
+    if req.value >= 0:
+        while move_times > 0:
+            t_wb[0] += move_step
+            sf_robot_trans_field.setSFVec3f(t_wb)
+            rospy.sleep(time_interval)
+            move_times -= 1
+        t_wb[0] += rest_move
+        sf_robot_trans_field.setSFVec3f(t_wb)
+        rospy.logwarn('Robot base has moved forward for %f m!' % abs(req.value))
+    # move backward
+    else:
+        while move_times > 0:
+            t_wb[0] -= move_step
+            sf_robot_trans_field.setSFVec3f(t_wb)
+            rospy.sleep(time_interval)
+            move_times -= 1
+        t_wb[0] -= rest_move
+        sf_robot_trans_field.setSFVec3f(t_wb)
+        rospy.logwarn('Robot base has moved back for %f m!' % abs(req.value))
+    resp = SetFloatResponse()
+    resp.success = True
+    return resp
+
 # run gripper server    
 srv_run_gripper = rospy.Service(
     'simulation/gripper/run', SetBool, run_gripper_srv)
+rospy.logwarn('gripper is initialized')
 
 # run obj handler servers
 srv_get_obj_position_ = rospy.Service(
@@ -230,6 +263,11 @@ srv_change_box_size = rospy.Service(
 srv_delete_box = rospy.Service(
     '/simulation/supervisor/delete_box', Trigger, deleteBoxSrvCb)
 rospy.logwarn('Object handler is initialized')
+
+# move base server
+srv_move_base = rospy.Service(
+    '/simulation/supervisor/move_base', SetFloat, moveBaseSrvCb)
+rospy.logwarn('base mover is initialized')
 
 # we want to use simulation time for ROS
 clockPublisher = rospy.Publisher('clock', Clock, queue_size=1)

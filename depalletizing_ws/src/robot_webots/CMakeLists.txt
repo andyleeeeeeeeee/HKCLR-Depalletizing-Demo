@@ -18,6 +18,7 @@ add_service_files(
   FieldSetVec3f.srv
   FieldSetRotation.srv
   SetSize.srv
+  SetFloat.srv
 )
 
 generate_messages(

@@ -14,13 +14,13 @@
             <Repeat num_cycles="36">
                 <Sequence name="left">
                     <Action ID="SenseObjectPose" category="" pose="{box_surface_pose}" service_name="sense_object_pose"/>
-                    <Action ID="ExecutePlanning" category="" pick_pose="{pick_pose}" place_pose="{place_pose}" pose="{box_surface_pose}" post_middle_pose="{post_middle_pose}" post_pick_pose="{post_pick_pose}" pre_middle_pose="{pre_middle_pose}" pre_pick_pose="{pre_pick_pose}" service_name="execute_planning"/>
+                    <Action ID="ExecutePlanning" category="" pick_pose="{pick_pose}" place_pose="{place_pose}" pose="{box_surface_pose}" post_middle_pose="{post_middle_pose}" post_pick_pose="{post_pick_pose}" post_pick_pose_edge="{post_pick_pose_edge}" pre_middle_pose="{pre_middle_pose}" pre_pick_pose="{pre_pick_pose}" service_name="execute_planning"/>
                     <Action ID="ExecuteGroupLinearJointStates" goal="{pre_middle_pose}" group_name="arm" name="pre middle" service_name="execute_group_joint_states" tolerance="0.01"/>
                     <Action ID="ExecuteRemoveObject" is_exact="1" name="remove boxes_surface" obj_name="boxsur" service_name="execute_remove_object"/>
                     <Action ID="ConnectWaypoints" connected_waypoints="{pick_motion}" name="pick motion" service_name="connect_waypoints" waypoint1="{pre_pick_pose}" waypoint2="{pick_pose}" waypoint3="" waypoint4="" waypoint5=""/>
                     <Action ID="ExecuteGroupManyPoses" constraint="" eef_step="0.1" goal_type="0" goals="{pick_motion}" group_name="arm" name="pre pick and pick" service_name="execute_group_many_poses" tolerance="0.01"/>
                     <Action ID="ExecuteSuction" enable="1" service_name="execute_suction"/>
-                    <Action ID="ConnectWaypoints" connected_waypoints="{pull_out}" name="pull out" service_name="connect_waypoints" waypoint1="{post_pick_pose}" waypoint2="" waypoint3="" waypoint4="" waypoint5=""/>
+                    <Action ID="ConnectWaypoints" connected_waypoints="{pull_out}" name="pull out" service_name="connect_waypoints" waypoint1="{post_pick_pose}" waypoint2="{post_pick_pose_edge}" waypoint3="" waypoint4="" waypoint5=""/>
                     <Action ID="ExecuteGroupManyPoses" constraint="" eef_step="0.1" goal_type="0" goals="{pull_out}" group_name="arm" name="post pick" service_name="execute_group_many_poses" tolerance="0.01"/>
                     <Action ID="ExecuteGroupLinearJointStates" goal="{post_middle_pose}" group_name="arm" name="post middle" service_name="execute_group_joint_states" tolerance="0.01"/>
                     <Action ID="ExecuteGroupLinearJointStates" goal="{place_pose}" group_name="arm" name="place" service_name="execute_group_joint_states" tolerance="0.01"/>
@@ -114,6 +114,7 @@
             <input_port default="{box_surface_pose}" name="pose">Pose</input_port>
             <output_port default="{post_middle_pose}" name="post_middle_pose">Double Array</output_port>
             <output_port default="{post_pick_pose}" name="post_pick_pose">Pose</output_port>
+            <output_port default="{post_pick_pose_edge}" name="post_pick_pose_edge">Pose</output_port>
             <output_port default="{pre_middle_pose}" name="pre_middle_pose">Double Array</output_port>
             <output_port default="{pre_pick_pose}" name="pre_pick_pose">Pose</output_port>
             <input_port default="execute_planning" name="service_name"/>

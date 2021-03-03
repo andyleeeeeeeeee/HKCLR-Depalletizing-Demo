@@ -290,6 +290,7 @@ public:
         OutputPort<Pose>("pre_pick_pose"),
         OutputPort<Pose>("pick_pose"),
         OutputPort<Pose>("post_pick_pose"),
+        OutputPort<Pose>("post_pick_pose_edge"),
         OutputPort<DoubleArray>("post_middle_pose"),
         OutputPort<DoubleArray>("place_pose"),
     };
@@ -320,6 +321,10 @@ public:
       Pose post_pick_pose{};
       post_pick_pose.fromROS(response.post_pick_pose);
       setOutput("post_pick_pose", post_pick_pose);
+
+      Pose post_pick_pose_edge{};
+      post_pick_pose_edge.fromROS(response.post_pick_pose_edge);
+      setOutput("post_pick_pose_edge", post_pick_pose_edge);
 
       DoubleArray post_middle_pose{};
       post_middle_pose.fromROS(response.post_middle_pose);

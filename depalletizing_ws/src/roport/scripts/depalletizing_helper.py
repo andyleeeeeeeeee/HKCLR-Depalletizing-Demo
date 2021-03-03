@@ -57,22 +57,42 @@ class NaiveDepalletizingPlanner(object):
         # offset = -0.02  
         # tcp_pose[0:3, 3] = obj_pose[0:3, 3] + np.array([0, 0, offset])
 
+        # pick
         pick_tcp_pose = to_ros_pose(tcp_pose)
         # rospy.logwarn('pick_tcp_pose is ' + str(pick_tcp_pose) + '!!!!!')
+        # pre-pick
         pre_pick_offset = get_param('pre_pick_offset', [-0.1, 0, 0])
         pre_pick_tcp_pose = offset_ros_pose(pick_tcp_pose, pre_pick_offset)
-        # rospy.logwarn('pre_pick_tcp_pose is ' + str(pre_pick_tcp_pose) + '!!!!!')
         # pull out planning
         post_pick_offset = get_param('post_pick_offset', [-0.4, 0, 0.1])
         if abs(obj_pose[1, 3]) >= 0.5:
             post_pick_tcp_pose = offset_ros_pose(pick_tcp_pose, post_pick_offset)
+        elif abs(obj_pose[1, 3]) >= 0.25 and abs(obj_pose[1, 3]) < 0.5:
+            if self.pick_from_left:
+                post_pick_offset[1] += 0.25
+            else:
+                post_pick_offset[1] -= 0.25
+            post_pick_tcp_pose = offset_ros_pose(pick_tcp_pose, post_pick_offset)
         else:
             if self.pick_from_left:
-                post_pick_offset[1] += 0.3
+                post_pick_offset[1] += 0.5
             else:
-                post_pick_offset[1] -= 0.3
-            post_pick_tcp_pose = offset_ros_pose(pick_tcp_pose, post_pick_offset)                                
-        return pick_tcp_pose, pre_pick_tcp_pose, post_pick_tcp_pose
+                post_pick_offset[1] -= 0.5
+            post_pick_tcp_pose = offset_ros_pose(pick_tcp_pose, post_pick_offset)
+        # if box is far from origin in y direction, it has to come back a little in case of collision with side wall.
+        post_pick_edge_offset = [-0.1, 0, 0]
+        if abs(obj_pose[1, 3]) >= 0.7:
+            if self.pick_from_left:
+                post_pick_edge_offset[1] -= 0.2
+                post_pick_tcp_pose_edge = offset_ros_pose(post_pick_tcp_pose, post_pick_edge_offset)
+            else:
+                post_pick_edge_offset[1] += 0.2
+                post_pick_tcp_pose_edge = offset_ros_pose(post_pick_tcp_pose, post_pick_edge_offset)
+        else:
+            post_pick_edge_offset[0] = 0
+            post_pick_tcp_pose_edge = offset_ros_pose(post_pick_tcp_pose, post_pick_edge_offset)
+
+        return pick_tcp_pose, pre_pick_tcp_pose, post_pick_tcp_pose, post_pick_tcp_pose_edge
 
     def middle_plan(self, obj_pose):
         # if pick from left side, we'd better to place the box from right side.
@@ -129,6 +149,8 @@ class DepalletizingHelper(object):
             '/supervisor/set_orientation', FieldSetRotation)
         self.sim_run_gripper_client = self._create_client(
             '/gripper/run', SetBool)
+        self.sim_move_base_client = self._create_client(
+            '/supervisor/move_base', SetFloat)           
 
         # Clients for querying services provided by real devices
         self.get_pointcloud_client = self._create_client(
@@ -233,16 +255,24 @@ class DepalletizingHelper(object):
         """Plan pick and place pose_util for given box pose_util and its category.
         All poses are relevant to the robot base frame
         """
-        obj_pose = sd_pose(req.pose)
+        # decide whether to move forward the base before next pick
+        if req.pose.position.x <= 0.90:
+            obj_pose = sd_pose(req.pose)
+        else:
+            if self.sim_move_base_client in self.enabled_clients:
+                move_forward = req.pose.position.x - 0.90
+                self.sim_move_base_client(move_forward)
+            req.pose.position.x -= move_forward
+            obj_pose = sd_pose(req.pose)
+
         # plan pick
-        pick_tcp_pose, pre_pick_tcp_pose, post_pick_tcp_pose = self.planner.picking_plan(obj_pose)
+        pick_tcp_pose, pre_pick_tcp_pose, post_pick_tcp_pose, post_pick_tcp_pose_edge = self.planner.picking_plan(obj_pose)
 
         # plan middle
         pre_middle_pose, post_middle_pose = self.planner.middle_plan(obj_pose)
     
         # plan place
         place_pose = self.planner.placing_plan()
-
         resp = ExecutePlanningResponse()
         # Double array
         resp.pre_middle_pose = pre_middle_pose
@@ -250,6 +280,7 @@ class DepalletizingHelper(object):
         resp.pre_pick_pose = pre_pick_tcp_pose
         resp.pick_pose = pick_tcp_pose
         resp.post_pick_pose = post_pick_tcp_pose
+        resp.post_pick_pose_edge = post_pick_tcp_pose_edge
         # Double array
         resp.post_middle_pose = post_middle_pose
         resp.place_pose = place_pose
