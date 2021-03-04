@@ -35,6 +35,7 @@ if jointPrefix:
 robot = Supervisor()
 root_field_ = robot.getRoot().getField('children')
 self_robot_ = robot.getFromDef('SelfRobot')
+aubo_robot_ = robot.getFromDef('Aubo')
 
 jointStatePublisher = JointStatePublisher(robot, jointPrefix)
 rospy.logwarn('JointStatePublisher is initialized')
@@ -216,8 +217,10 @@ def deleteBoxSrvCb(req):
 def moveBaseSrvCb(req):
     sf_robot_trans_field = self_robot_.getField('translation')
     t_wb = sf_robot_trans_field.getSFVec3f()
+    aubo_robot_trans_field = aubo_robot_.getField('translation')
+    t_wa = aubo_robot_trans_field.getSFVec3f()
     # move forward
-    move_step = 0.01
+    move_step = 0.05
     time_interval = 0.01
     move_times = abs(req.value) // move_step
     rest_move = abs(req.value) % move_step
@@ -225,6 +228,8 @@ def moveBaseSrvCb(req):
         while move_times > 0:
             t_wb[0] += move_step
             sf_robot_trans_field.setSFVec3f(t_wb)
+            t_wa[0] += move_step
+            aubo_robot_trans_field.setSFVec3f(t_wa)
             rospy.sleep(time_interval)
             move_times -= 1
         t_wb[0] += rest_move
@@ -235,6 +240,8 @@ def moveBaseSrvCb(req):
         while move_times > 0:
             t_wb[0] -= move_step
             sf_robot_trans_field.setSFVec3f(t_wb)
+            t_wa[0] -= move_step
+            aubo_robot_trans_field.setSFVec3f(t_wa)
             rospy.sleep(time_interval)
             move_times -= 1
         t_wb[0] -= rest_move

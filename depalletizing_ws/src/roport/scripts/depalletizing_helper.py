@@ -65,33 +65,40 @@ class NaiveDepalletizingPlanner(object):
         pre_pick_tcp_pose = offset_ros_pose(pick_tcp_pose, pre_pick_offset)
         # pull out planning
         post_pick_offset = get_param('post_pick_offset', [-0.4, 0, 0.1])
+        post_pick_edge_offset = [0, 0, 0]
+        post_pick_edge_offset[0] = post_pick_offset[0]
         if abs(obj_pose[1, 3]) >= 0.5:
-            post_pick_tcp_pose = offset_ros_pose(pick_tcp_pose, post_pick_offset)
-        elif abs(obj_pose[1, 3]) >= 0.25 and abs(obj_pose[1, 3]) < 0.5:
-            if self.pick_from_left:
-                post_pick_offset[1] += 0.25
-            else:
-                post_pick_offset[1] -= 0.25
+            # raise and pull out
             post_pick_tcp_pose = offset_ros_pose(pick_tcp_pose, post_pick_offset)
         else:
-            if self.pick_from_left:
-                post_pick_offset[1] += 0.5
-            else:
-                post_pick_offset[1] -= 0.5
+            # only raise
+            post_pick_offset[0] = 0
             post_pick_tcp_pose = offset_ros_pose(pick_tcp_pose, post_pick_offset)
+
+
         # if box is far from origin in y direction, it has to come back a little in case of collision with side wall.
-        post_pick_edge_offset = [-0.1, 0, 0]
         if abs(obj_pose[1, 3]) >= 0.7:
+            # if y > 0.5, we have pull it out before, and we pull out a little more for it to get close to center
+            post_pick_edge_offset[0] = -0.1
             if self.pick_from_left:
                 post_pick_edge_offset[1] -= 0.2
-                post_pick_tcp_pose_edge = offset_ros_pose(post_pick_tcp_pose, post_pick_edge_offset)
             else:
-                post_pick_edge_offset[1] += 0.2
-                post_pick_tcp_pose_edge = offset_ros_pose(post_pick_tcp_pose, post_pick_edge_offset)
-        else:
-            post_pick_edge_offset[0] = 0
-            post_pick_tcp_pose_edge = offset_ros_pose(post_pick_tcp_pose, post_pick_edge_offset)
+                post_pick_edge_offset[1] += 0.2       
+        # if box is close from origin in y direction, it has to come out a little because of workspace limitation.
+        # if y < 0.5, we still did not pull out the box, and we pull out here
+        elif abs(obj_pose[1, 3]) >= 0.25 and abs(obj_pose[1, 3]) < 0.5:
+            if self.pick_from_left:
+                post_pick_edge_offset[1] += 0.25
+            else:
+                post_pick_edge_offset[1] -= 0.25
+                
+        elif abs(obj_pose[1, 3]) < 0.25:
+            if self.pick_from_left:
+                post_pick_edge_offset[1] += 0.5
+            else:
+                post_pick_edge_offset[1] -= 0.5 
 
+        post_pick_tcp_pose_edge = offset_ros_pose(post_pick_tcp_pose, post_pick_edge_offset)
         return pick_tcp_pose, pre_pick_tcp_pose, post_pick_tcp_pose, post_pick_tcp_pose_edge
 
     def middle_plan(self, obj_pose):
@@ -103,8 +110,8 @@ class NaiveDepalletizingPlanner(object):
         else:
             pre_middle_pose = get_param('pre_middle_right', [0.0777, 1.8904, -2.4741, -0.9875, 1.5718, -0.0037])
             post_middle_pose = get_param('post_middle_right', [0.7015,-0.4631,-1.6642, -1.0472, 0.0081, -0.0615])
-        if obj_pose[2, 3] >= 1.3:
-            pre_middle_pose[0] += 1.0
+        # if obj_pose[2, 3] >= 1.3:
+        #     pre_middle_pose[0] += 0.8
         return pre_middle_pose, post_middle_pose
                                     
 
