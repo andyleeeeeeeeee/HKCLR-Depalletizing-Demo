@@ -106,15 +106,11 @@ roslaunch robot_webots robot_webots_simulation.launch
 roslaunch robot_controller moveit_group.launch use_sim_time:=true
 ````
 Now you can control SelfRobot in Webots by MontionPlanning Plugin in Rviz
-### Launch a small demo with collision free planning
+### Launch the depalletizing demo without aubo arm
 ````
-roslaunch roport robot_minimal_demo.launch
+roslaunch roport hkcenter_depalletizing_simulation.launch
 ````
-or Without collision free
-````
-roslaunch roport test.launch
-````
-### Other complex function is still being developing
+### Or Launch the depalletizing demo with aubo arm
 
 ## Real Robot
 ### Launch ros controller of SelfRobot and its hardware interface
