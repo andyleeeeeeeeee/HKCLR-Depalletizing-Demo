@@ -1,0 +1,12 @@
+controller_list:
+  - name: fake_aubo_controller
+    joints:
+      - shoulder_joint
+      - upperArm_joint
+      - foreArm_joint
+      - wrist1_joint
+      - wrist2_joint
+      - wrist3_joint
+initial:  # Define initial robot poses.
+  - group: aubo
+    pose: zero

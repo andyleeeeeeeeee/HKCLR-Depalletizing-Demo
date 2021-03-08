@@ -33,7 +33,7 @@ class MoveGroupInterface(object):
         super(MoveGroupInterface, self).__init__()
 
         moveit_commander.roscpp_initialize(sys.argv)
-        self.commander = moveit_commander.RobotCommander(robot_description, ns)
+        self.commander = moveit_commander.RobotCommander(robot_description, '')
 
         if not isinstance(group_names, list) and not isinstance(group_names, tuple):
             raise TypeError('group_names should be list or tuple, but got {}'.format(type(group_names)))
@@ -201,6 +201,16 @@ class MoveGroupInterface(object):
         except moveit_commander.MoveItCommanderException:
             group.stop()
             group.clear_pose_targets()
+            return False
+
+    # Set a scaling factor for optionally reducing the maximum joint velocity. Allowed values are in (0,1]
+    def group_set_max_velocity_scaling_factor(self, group_name, value):
+        group = self._get_group_by_name(group_name)
+        try:
+            group.set_max_velocity_scaling_factor(value)
+            rospy.logwarn('the velocity scaling factor of group [%s] has been set to [%f] !!!!!' % (group_name, value))
+            return True
+        except moveit_commander.MoveItCommanderException:
             return False
 
     def group_go_to_named_states(self, group_name, state_name):
@@ -609,7 +619,7 @@ class MoveGroupInterface(object):
                 return True
             rospy.sleep(0.1)
             seconds = rospy.get_time()
-        return False
+        return True
 
     def attach_box(self, group_name, eef_group_name, box_name, box_pose, box_size):
         ok = self.add_box(group_name, box_name, box_pose, box_size, is_absolute=True, auto_subfix=False)

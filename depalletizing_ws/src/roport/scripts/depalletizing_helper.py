@@ -136,6 +136,9 @@ class DepalletizingHelper(object):
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
+        # flag for decide whether the aubo has changed position just ago
+        self.aubo_pose = 'A'
+
         # switch for Parallel Running
         self.store_DI_state = False
         self.fetch_DI_state = False
@@ -157,8 +160,10 @@ class DepalletizingHelper(object):
         self.sim_run_gripper_client = self._create_client(
             '/gripper/run', SetBool)
         self.sim_move_base_client = self._create_client(
-            '/supervisor/move_base', SetFloat)           
-
+            '/supervisor/move_base', SetFloat)
+        # Client for ask aubo to change photoing pose           
+        self.move_aubo_client = self._create_client(
+            '/aubo/execute_group_named_states', ExecuteGroupNamedStates, False) 
         # Clients for querying services provided by real devices
         self.get_pointcloud_client = self._create_client(
             '/hv1000/get_pointcloud', GetPointCloud, False)
@@ -263,7 +268,7 @@ class DepalletizingHelper(object):
         All poses are relevant to the robot base frame
         """
         # decide whether to move forward the base before next pick
-        if req.pose.position.x <= 0.90:
+        if req.pose.position.x <= 0.91:
             obj_pose = sd_pose(req.pose)
         else:
             if self.sim_move_base_client in self.enabled_clients:
@@ -332,6 +337,34 @@ class DepalletizingHelper(object):
             # for sim, we omit translation between base frame to camera frame (hand-eye calibration)
             resp.result_status = resp.SUCCEEDED
             resp.pose = obj_pose
+
+            # decide whether to change aubo's pose to A, B, C, D districts
+            move_aubo_req = ExecuteGroupNamedStatesRequest()
+            move_aubo_req.group_name = 'aubo'
+            y_value = obj_pose.position.y
+            z_value = obj_pose.position.z
+            if self.move_aubo_client in self.enabled_clients:
+                if y_value >= 0 and z_value >= 1.35:
+                    move_aubo_req.state_name = 'A'
+                elif y_value < 0 and z_value >= 1.35:
+                    move_aubo_req.state_name = 'B'
+                elif y_value >= 0 and z_value < 1.35:
+                    move_aubo_req.state_name = 'C'
+                elif y_value < 0 and z_value < 1.35:
+                    move_aubo_req.state_name = 'D' 
+            if self.aubo_pose == move_aubo_req.state_name:
+                rospy.logwarn('No need to change Aubo pose, which is in Pose %s !!!!!' % move_aubo_req.state_name)
+            else:
+                self.aubo_pose = move_aubo_req.state_name
+                move_aubo_resp = self.move_aubo_client(move_aubo_req)
+                rospy.logwarn('Need to change Aubo pose. Aubo has been successfully moved to Pose %s !!!!!. Recapture pointcloud once again!!!' % move_aubo_req.state_name)
+                obj_re_pose = Pose()
+                get_position_resp = self.sim_get_position_client(0)
+                obj_re_pose.position = get_position_resp.position
+                get_orientation_resp = self.sim_get_orientation_client(0)
+                obj_re_pose.orientation = get_orientation_resp.orientation
+                resp.result_status = resp.SUCCEEDED
+                resp.pose = obj_re_pose
         return resp
 
     def _store_detected_info_handle(self, req):

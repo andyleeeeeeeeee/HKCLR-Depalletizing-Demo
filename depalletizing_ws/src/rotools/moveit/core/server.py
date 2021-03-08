@@ -23,22 +23,23 @@ class MoveItServer(object):
         self._srv_get_pose = rospy.Service('get_group_pose', GetGroupPose, self.get_pose_handle)
         self._srv_get_js = rospy.Service('get_group_joint_states', GetGroupJointStates, self.get_js_handle)
 
+        self._srv_group_speed = rospy.Service('execute_group_speed', ExecuteGroupSpeed, self.group_speed_handle)
         self._srv_group_shift = rospy.Service('execute_group_shift', ExecuteGroupShift, self.group_shift_handle)
         self._srv_group_pose = rospy.Service('execute_group_pose', ExecuteGroupPose, self.group_pose_handle)
         self._srv_group_many_poses = rospy.Service('execute_group_many_poses', ExecuteGroupManyPoses, self.group_many_poses_handle)
         self._srv_group_js = rospy.Service('execute_group_joint_states', ExecuteGroupJointStates, self.group_js_handle)
-        
+        self._srv_group_home = rospy.Service('execute_group_named_states', ExecuteGroupNamedStates, self.group_named_states_handle)
+
         self._srv_add_box = rospy.Service('execute_add_box', ExecuteAddBox, self.add_box_handle)
         self._srv_add_plane = rospy.Service('execute_add_plane', ExecuteAddPlane, self.add_plane_handle)
         self._srv_attach_box = rospy.Service('execute_attach_box', ExecuteAttachBox, self.attach_box_handle)
         self._srv_detach_obj = rospy.Service('execute_detach_object', ExecuteDetachObject, self.detach_object_handle)
         self._srv_remove_obj = rospy.Service('execute_remove_object', ExecuteRemoveObject, self.remove_object_handle)
-        self._type_in_pose_srv = rospy.Service('type_in_pose', TypeInPose, self._type_in_pose_handle)
 
-    def _type_in_pose_handle(self, req):
-        # used to transform typein information into blackboard
-        resp = TypeInPoseResponse()
-        resp.pose_on_blackboard = req.type_in_pose
+    def group_speed_handle(self, req):
+        ok = self.interface.group_set_max_velocity_scaling_factor(req.group_name, req.value)
+        resp = ExecuteGroupSpeedResponse()
+        resp.result_status = resp.SUCCEEDED if ok else resp.FAILED
         return resp
 
     def get_pose_handle(self, req):
@@ -61,6 +62,12 @@ class MoveItServer(object):
             resp.result_status = resp.SUCCEEDED
         except IndexError:
             resp.result_status = resp.FAILED
+        return resp
+
+    def group_named_states_handle(self, req):
+        ok = self.interface.group_go_to_named_states(req.group_name, req.state_name)
+        resp = ExecuteGroupNamedStatesResponse()
+        resp.result_status = resp.SUCCEEDED if ok else resp.FAILED
         return resp
 
     def group_shift_handle(self, req):

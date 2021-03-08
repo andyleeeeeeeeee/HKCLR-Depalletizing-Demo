@@ -57,10 +57,12 @@ add_service_files(
   GetGroupJointStates.srv
   ExecutePlanning.srv
   ExecuteSuction.srv
+  ExecuteGroupSpeed.srv
   ExecuteGroupPose.srv
   ExecuteGroupManyPoses.srv
   ExecuteGroupShift.srv
   ExecuteGroupJointStates.srv
+  ExecuteGroupNamedStates.srv
   TypeInPose.srv
   ConnectWaypoints.srv
   ExecuteAddBox.srv

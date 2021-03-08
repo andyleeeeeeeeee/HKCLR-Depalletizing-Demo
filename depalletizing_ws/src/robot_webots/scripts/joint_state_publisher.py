@@ -21,17 +21,10 @@ from sensor_msgs.msg import JointState
 class JointStatePublisher(object):
     """Publish as a ROS topic the joint state."""
 
-    jointNames = [
-        'robot_joint1',
-        'robot_joint2',
-        'robot_joint3',
-        'robot_joint4',
-        'robot_joint5',
-        'robot_joint6'
-    ]
-
-    def __init__(self, robot, jointPrefix):
+    def __init__(self, robot, jointPrefix, jointNames, namespace):
         """Initialize the motors, position sensors and the topic."""
+        self.namespace = namespace
+        self.jointNames = jointNames
         self.robot = robot
         self.jointPrefix = jointPrefix
         self.motors = []
@@ -40,19 +33,19 @@ class JointStatePublisher(object):
         self.last_joint_states = None
         self.previousTime = 0
         self.previousPosition = []
-        for name in JointStatePublisher.jointNames:
+        for name in self.jointNames:
             self.motors.append(robot.getMotor(name))
             self.sensors.append(robot.getPositionSensor(name + '_sensor'))
             self.sensors[-1].enable(self.timestep)
             self.previousPosition.append(0)
-        self.publisher = rospy.Publisher('joint_states', JointState, queue_size=1)
+        self.publisher = rospy.Publisher(self.namespace + "/joint_states", JointState, queue_size=1)
 
     def publish(self):
         """Publish the 'joint_states' topic with up to date value."""
         msg = JointState()
         msg.header.stamp = rospy.get_rostime()
         msg.header.frame_id = "From simulation state data"
-        msg.name = [s + self.jointPrefix for s in JointStatePublisher.jointNames]
+        msg.name = [s + self.jointPrefix for s in self.jointNames]
         msg.position = []
         timeDifference = self.robot.getTime() - self.previousTime
         for i in range(len(self.sensors)):

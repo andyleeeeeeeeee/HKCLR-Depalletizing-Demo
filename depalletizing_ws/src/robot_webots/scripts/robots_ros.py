@@ -36,14 +36,24 @@ robot = Supervisor()
 root_field_ = robot.getRoot().getField('children')
 self_robot_ = robot.getFromDef('SelfRobot')
 aubo_robot_ = robot.getFromDef('Aubo')
+working_surface_ = robot.getFromDef('working_surface')
 
-jointStatePublisher = JointStatePublisher(robot, jointPrefix)
-rospy.logwarn('JointStatePublisher is initialized')
+jointNames = [
+        'robot_joint1',
+        'robot_joint2',
+        'robot_joint3',
+        'robot_joint4',
+        'robot_joint5',
+        'robot_joint6'
+]
+jointstates_namespace = "robot"
+jointStatePublisher = JointStatePublisher(robot, jointPrefix, jointNames, jointstates_namespace)
+rospy.logwarn('Robot JointStatePublisher is initialized')
 
-trajectoryFollower = TrajectoryFollower(
-    robot, jointStatePublisher, jointPrefix)
+controller_namespace = "robot/arm_controller"
+trajectoryFollower = TrajectoryFollower(robot, jointStatePublisher, jointPrefix, jointNames, controller_namespace)
 trajectoryFollower.start()
-rospy.logwarn('TrajectoryFollower is initialized')
+rospy.logwarn('Robot TrajectoryFollower is initialized')
 
 # init gripper
 gripper_ = robot.getConnector('connector')
@@ -219,6 +229,8 @@ def moveBaseSrvCb(req):
     t_wb = sf_robot_trans_field.getSFVec3f()
     aubo_robot_trans_field = aubo_robot_.getField('translation')
     t_wa = aubo_robot_trans_field.getSFVec3f()
+    working_surface_trans_field = working_surface_.getField('translation')
+    t_ww = working_surface_trans_field.getSFVec3f()
     # move forward
     move_step = 0.05
     time_interval = 0.01
@@ -230,6 +242,8 @@ def moveBaseSrvCb(req):
             sf_robot_trans_field.setSFVec3f(t_wb)
             t_wa[0] += move_step
             aubo_robot_trans_field.setSFVec3f(t_wa)
+            t_ww[0] += move_step
+            working_surface_trans_field.setSFVec3f(t_ww)
             rospy.sleep(time_interval)
             move_times -= 1
         t_wb[0] += rest_move
@@ -242,6 +256,8 @@ def moveBaseSrvCb(req):
             sf_robot_trans_field.setSFVec3f(t_wb)
             t_wa[0] -= move_step
             aubo_robot_trans_field.setSFVec3f(t_wa)
+            t_ww[0] -= move_step
+            working_surface_trans_field.setSFVec3f(t_ww)
             rospy.sleep(time_interval)
             move_times -= 1
         t_wb[0] -= rest_move

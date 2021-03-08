@@ -104,31 +104,24 @@ def sample_trajectory(trajectory, t):
 class TrajectoryFollower(object):
     """Create and handle the action 'follow_joint_trajectory' server."""
 
-    jointNames = [
-        'robot_joint1',
-        'robot_joint2',
-        'robot_joint3',
-        'robot_joint4',
-        'robot_joint5',
-        'robot_joint6'
-    ]
-
-    def __init__(self, robot, jointStatePublisher, jointPrefix, goal_time_tolerance=None):
+    def __init__(self, robot, jointStatePublisher, jointPrefix, jointNames, namespace, goal_time_tolerance=None):
+        self.namespace = namespace
+        self.jointNames = jointNames
         self.robot = robot
         self.jointPrefix = jointPrefix
-        self.prefixedJointNames = [s + self.jointPrefix for s in TrajectoryFollower.jointNames]
+        self.prefixedJointNames = [s + self.jointPrefix for s in self.jointNames]
         self.jointStatePublisher = jointStatePublisher
         self.timestep = int(robot.getBasicTimeStep())
         self.motors = []
         self.sensors = []
-        for name in TrajectoryFollower.jointNames:
+        for name in self.jointNames:
             self.motors.append(robot.getMotor(name))
             self.sensors.append(robot.getPositionSensor(name + '_sensor'))
             self.sensors[-1].enable(self.timestep)
         self.goal_handle = None
         self.trajectory = None
         self.joint_goal_tolerances = [0.05, 0.05, 0.05, 0.05, 0.05, 0.05]
-        self.server = actionlib.ActionServer("arm_controller/follow_joint_trajectory",
+        self.server = actionlib.ActionServer(self.namespace + "/follow_joint_trajectory",
                                              FollowJointTrajectoryAction,
                                              self.on_goal, self.on_cancel, auto_start=False)
 
@@ -189,7 +182,7 @@ class TrajectoryFollower(object):
         """Handle a trajectory cancel command."""
         if goal_handle == self.goal_handle:
             # stop the motors
-            for i in range(len(TrajectoryFollower.jointNames)):
+            for i in range(len(self.jointNames)):
                 self.motors[i].setPosition(self.sensors[i].getValue())
             self.goal_handle.set_canceled()
             self.goal_handle = None

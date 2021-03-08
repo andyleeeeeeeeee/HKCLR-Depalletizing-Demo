@@ -9,8 +9,9 @@
 // Services (customized)
 #include <roport/ExecuteGroupJointStates.h>
 #include <roport/ExecuteGroupPose.h>
+#include <roport/ExecuteGroupSpeed.h>
 #include <roport/ExecuteGroupManyPoses.h>
-
+#include <roport/ExecuteGroupNamedStates.h>
 #include <roport/ExecuteGroupShift.h>
 #include <roport/TypeInPose.h>
 #include <roport/ConnectWaypoints.h>
@@ -97,6 +98,84 @@ public:
     getInput<DoubleArray>("goal", goal);
     request.goal = goal.plainToROS();
     getInput<double>("tolerance", request.tolerance);
+    ROS_INFO("RoPort: %s sending request.", name_.c_str());
+  }
+
+  BT::NodeStatus onResponse(const ResponseType &response) override {
+    if (response.result_status == response.SUCCEEDED) {
+      ROS_INFO("RoPort: %s response SUCCEEDED.", name_.c_str());
+      return NodeStatus::SUCCESS;
+    } else {
+      ROS_INFO("RoPort: %s response FAILURE.", name_.c_str());
+      return NodeStatus::FAILURE;
+    }
+  }
+
+  BT::NodeStatus onFailedRequest(RosServiceNode::FailureCause failure) override {
+    ROS_ERROR("RoPort: %s request failed %d.", name_.c_str(), static_cast<int>(failure));
+    return BT::NodeStatus::FAILURE;
+  }
+
+private:
+  std::string name_;
+};
+
+class ExecuteGroupNamedStates : public RosServiceNode<roport::ExecuteGroupNamedStates>
+{
+public:
+  ExecuteGroupNamedStates(ros::NodeHandle &nh, const std::string& name, const BT::NodeConfiguration & cfg) :
+      RosServiceNode<roport::ExecuteGroupNamedStates>(nh, name, cfg), name_(name) {}
+
+  static BT::PortsList providedPorts() {
+    return {
+        InputPort<Header>("header"),
+        InputPort<std::string>("group_name"),
+        InputPort<std::string>("state_name"),
+    };
+  }
+
+  void onSendRequest(RequestType &request) override {
+    getInput<std::string>("group_name", request.group_name);
+    getInput<std::string>("state_name", request.state_name);
+    ROS_INFO("RoPort: %s sending request.", name_.c_str());
+  }
+
+  BT::NodeStatus onResponse(const ResponseType &response) override {
+    if (response.result_status == response.SUCCEEDED) {
+      ROS_INFO("RoPort: %s response SUCCEEDED.", name_.c_str());
+      return NodeStatus::SUCCESS;
+    } else {
+      ROS_INFO("RoPort: %s response FAILURE.", name_.c_str());
+      return NodeStatus::FAILURE;
+    }
+  }
+
+  BT::NodeStatus onFailedRequest(RosServiceNode::FailureCause failure) override {
+    ROS_ERROR("RoPort: %s request failed %d.", name_.c_str(), static_cast<int>(failure));
+    return BT::NodeStatus::FAILURE;
+  }
+
+private:
+  std::string name_;
+};
+
+class ExecuteGroupSpeed : public RosServiceNode<roport::ExecuteGroupSpeed>
+{
+public:
+  ExecuteGroupSpeed(ros::NodeHandle &nh, const std::string& name, const BT::NodeConfiguration & cfg) :
+      RosServiceNode<roport::ExecuteGroupSpeed>(nh, name, cfg), name_(name) {}
+
+  static BT::PortsList providedPorts() {
+    return {
+        InputPort<Header>("header"),
+        InputPort<std::string>("group_name"),
+        InputPort<double>("value"),
+    };
+  }
+
+  void onSendRequest(RequestType &request) override {
+    getInput<std::string>("group_name", request.group_name);
+    getInput<double>("value", request.value);
     ROS_INFO("RoPort: %s sending request.", name_.c_str());
   }
 
@@ -865,9 +944,10 @@ int main(int argc, char **argv)
   RegisterRosService<ExecuteGroupAngularJointStates>(factory, "ExecuteGroupAngularJointStates", nh);
   RegisterRosService<ExecuteGroupLinearJointStates>(factory, "ExecuteGroupLinearJointStates", nh);
 
-
+  RegisterRosService<ExecuteGroupNamedStates>(factory, "ExecuteGroupNamedStates", nh);
   RegisterRosService<ExecuteGroupShift>(factory, "ExecuteGroupShift", nh);
   RegisterRosService<ExecuteGroupPose>(factory, "ExecuteGroupPose", nh);
+  RegisterRosService<ExecuteGroupSpeed>(factory, "ExecuteGroupSpeed", nh);
   RegisterRosService<ExecuteGroupManyPoses>(factory, "ExecuteGroupManyPoses", nh);
   RegisterRosService<TypeInPose>(factory, "TypeInPose", nh);
   RegisterRosService<ConnectWaypoints>(factory, "ConnectWaypoints", nh);
