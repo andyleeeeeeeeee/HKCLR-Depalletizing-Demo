@@ -101,16 +101,18 @@ source setup.bash
 ````
 roslaunch robot_webots robot_webots_simulation.launch
 ````
-### Launch moveit move_group with ikfast kinematics plugin
+### For Aubo robot, launch moveit move_group with kdl kinematics plugin and move_group_interface server
 ````
-roslaunch robot_controller moveit_group.launch use_sim_time:=true
+roslaunch robot_controller moveit_group_aubo.launch
 ````
-Now you can control SelfRobot in Webots by MontionPlanning Plugin in Rviz
-### Launch the depalletizing demo without aubo arm
+### For SelfDeveloped robot, launch moveit move_group with ikfast kinematics plugin
 ````
-roslaunch roport hkcenter_depalletizing_simulation.launch
+roslaunch robot_controller moveit_group_robot.launch
 ````
-### Or Launch the depalletizing demo with aubo arm
+### Launch the depalletizing demo
+````
+roslaunch roport hkcenter_depalletizing_simulation_aubo.launch
+````
 
 ## Real Robot
 ### Launch ros controller of SelfRobot and its hardware interface
@@ -120,7 +122,7 @@ roslaunch robot_controller ArmController.launch
 ````
 ### Launch moveit move_group with ikfast kinematics plugin
 ````
-roslaunch robot_controller moveit_group.launch use_sim_time:=false
+roslaunch robot_controller moveit_group_robot.launch use_sim_time:=false
 ````
 Now you can control real SelfRobot by MontionPlanning Plugin in Rviz
 ### Other complex function is still being developing
