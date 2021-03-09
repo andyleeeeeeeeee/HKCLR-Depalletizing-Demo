@@ -2,21 +2,32 @@
 <root main_tree_to_execute="BehaviorTree">
     <!-- ////////// -->
     <BehaviorTree ID="BehaviorTree">
-        <Sequence name="Robot Minimal Demo">
-            <Action ID="ExecuteGroupSpeed" group_name="arm" name="set robot speed" service_name="robot/execute_group_speed" value="1.0"/>
-            <Action ID="ExecuteGroupSpeed" group_name="aubo" name="set aubo speed" service_name="aubo/execute_group_speed" value="0.8"/>
-            <Sequence name="add collisions">
+        <Sequence name="Robot-Aubo Depalletizing Demo">
+            <Sequence name="set speed for robots">
+                <Action ID="ExecuteGroupSpeed" group_name="arm" name="set robot speed" service_name="robot/execute_group_speed" value="1.0"/>
+                <Action ID="ExecuteGroupSpeed" group_name="aubo" name="set aubo speed" service_name="aubo/execute_group_speed" value="0.5"/>
+            </Sequence>
+            <Sequence name="add collisions for Robot">
                 <Action ID="ExecuteAddPlane" group_name="arm" name="Add groud to scene" plane_name="ground" plane_normal="0 0 1" plane_pose="0 0 0 0 0 0 1" service_name="robot/execute_add_plane"/>
                 <Action ID="ExecuteAddBox" auto_subfix="1" box_name="left_wall" box_pose="2.76 1.2 1.35 0 0 0 1" box_size="5.5 0.001 2.7" group_name="arm" is_absolute="1" name="Add left wall" service_name="robot/execute_add_box"/>
                 <Action ID="ExecuteAddBox" auto_subfix="1" box_name="right_wall" box_pose="2.76 -1.2 1.35 0 0 0 1" box_size="5.5 0.001 2.7" group_name="arm" is_absolute="1" name="Add right wall" service_name="robot/execute_add_box"/>
-                <Action ID="ExecuteAddBox" auto_subfix="1" box_name="top_wall" box_pose="4 0 2.7 0 0 0 1" box_size="2 2.4 0.001" group_name="arm" is_absolute="1" name="Add top wall" service_name="robot/execute_add_box"/>
+                <Action ID="ExecuteAddBox" auto_subfix="1" box_name="top_wall" box_pose="2.5 0 2.7 0 0 0 1" box_size="5 2.4 0.001" group_name="arm" is_absolute="1" name="Add top wall" service_name="robot/execute_add_box"/>
                 <Action ID="ExecuteAddBox" auto_subfix="1" box_name="conveyor" box_pose="-1.341 0 0.4 0 0 0 1" box_size="2.56 1.26 0.8" group_name="arm" is_absolute="1" name="Add conveyor" service_name="robot/execute_add_box"/>
+                <Action ID="ExecuteAddBox" auto_subfix="0" box_name="boxsur" box_pose="0.901 0 1.35 0 0 0 1" box_size="0.001 2.4 2.7" group_name="arm" is_absolute="1" name="box_surface" service_name="robot/execute_add_box"/>
             </Sequence>
-            <Action ID="ExecuteAddBox" auto_subfix="0" box_name="boxsur" box_pose="0.901 0 1.35 0 0 0 1" box_size="0.001 2.4 2.7" group_name="arm" is_absolute="1" name="box_surface" service_name="robot/execute_add_box"/>
-            <Action ID="ExecuteGroupNamedStates" group_name="aubo" name="aubo initial state" service_name="aubo/execute_group_named_states" state_name="A"/>
-            <Action ID="ExecuteGroupNamedStates" group_name="arm" name="robot initial state" service_name="robot/execute_group_named_states" state_name="left_pre"/>
+            <Sequence name="add collisions for Aubo">
+                <Action ID="ExecuteAddBox" auto_subfix="1" box_name="conveyor" box_pose="-0.49 0 -0.4 0 0 0 1" box_size="2.56 1.26 0.8" group_name="aubo" is_absolute="1" name="Add conveyor" service_name="aubo/execute_add_box"/>
+                <Action ID="ExecuteAddBox" auto_subfix="1" box_name="top_wall" box_pose="0 0 1.9 0 0 0 1" box_size="2 2.4 0.001" group_name="aubo" is_absolute="1" name="Add top wall" service_name="aubo/execute_add_box"/>
+                <Action ID="ExecuteAddBox" auto_subfix="1" box_name="left_wall" box_pose="0 -1.2 0.55 0 0 0 1" box_size="2 0.001 2.7" group_name="aubo" is_absolute="1" name="Add left wall" service_name="aubo/execute_add_box"/>
+                <Action ID="ExecuteAddBox" auto_subfix="1" box_name="right_wall" box_pose="0 1.2 0.55 0 0 0 1" box_size="2 0.001 2.7" group_name="aubo" is_absolute="1" name="Add right wall" service_name="aubo/execute_add_box"/>
+                <Action ID="ExecuteAddBox" auto_subfix="1" box_name="Robot_back" box_pose="0.85 0 0.55 0 0 0 1" box_size="0.001 0.15 2.7" group_name="aubo" is_absolute="1" name="Add Robot back" service_name="aubo/execute_add_box"/>
+            </Sequence>
+            <Sequence name="initialize robots">
+                <Action ID="ExecuteGroupNamedStates" group_name="aubo" name="aubo initial state" service_name="aubo/execute_group_named_states" state_name="A"/>
+                <Action ID="ExecuteGroupNamedStates" group_name="arm" name="robot initial state" service_name="robot/execute_group_named_states" state_name="left_pre"/>
+            </Sequence>
             <Repeat num_cycles="100">
-                <Sequence name="left">
+                <Sequence name="Depalletizing Proccess">
                     <Action ID="SenseObjectPose" category="" pose="{box_surface_pose}" service_name="sense_object_pose"/>
                     <Action ID="ExecutePlanning" category="" pick_pose="{pick_pose}" place_pose="{place_pose}" pose="{box_surface_pose}" post_middle_pose="{post_middle_pose}" post_pick_pose="{post_pick_pose}" post_pick_pose_edge="{post_pick_pose_edge}" pre_middle_pose="{pre_middle_pose}" pre_pick_pose="{pre_pick_pose}" service_name="execute_planning"/>
                     <Action ID="ExecuteGroupLinearJointStates" goal="{pre_middle_pose}" group_name="arm" name="pre middle" service_name="robot/execute_group_joint_states" tolerance="0.01"/>
@@ -30,6 +41,7 @@
                     <Action ID="ExecuteGroupLinearJointStates" goal="{place_pose}" group_name="arm" name="place" service_name="robot/execute_group_joint_states" tolerance="0.01"/>
                     <Action ID="ExecuteSuction" enable="0" service_name="execute_suction"/>
                     <Action ID="ExecuteAddBox" auto_subfix="0" box_name="boxsur" box_pose="0.901 0 1.35 0 0 0 1" box_size="0.001 2.4 2.7" group_name="arm" is_absolute="1" name="box_surface" service_name="robot/execute_add_box"/>
+                    <Action ID="ExecuteGroupLinearJointStates" goal="{pre_middle_pose}" group_name="arm" name="back to pre middle" service_name="robot/execute_group_joint_states" tolerance="0.01"/>
                 </Sequence>
             </Repeat>
         </Sequence>

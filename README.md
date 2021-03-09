@@ -105,7 +105,7 @@ roslaunch robot_webots robot_webots_simulation.launch
 ````
 roslaunch robot_controller moveit_group_aubo.launch
 ````
-### For SelfDeveloped robot, launch moveit move_group with ikfast kinematics plugin
+### For SelfDeveloped robot, launch moveit move_group with ikfast kinematics plugin and move_group_interface server
 ````
 roslaunch robot_controller moveit_group_robot.launch
 ````

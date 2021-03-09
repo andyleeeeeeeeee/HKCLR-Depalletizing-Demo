@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from multiprocessing import Process
 
 import rospy
 import tf2_ros
@@ -164,6 +165,9 @@ class DepalletizingHelper(object):
         # Client for ask aubo to change photoing pose           
         self.move_aubo_client = self._create_client(
             '/aubo/execute_group_named_states', ExecuteGroupNamedStates, False) 
+        # Client for ask robot to change pre middle pose 
+        self.move_robot_client = self._create_client(
+            '/robot/execute_group_named_states', ExecuteGroupNamedStates, False) 
         # Clients for querying services provided by real devices
         self.get_pointcloud_client = self._create_client(
             '/hv1000/get_pointcloud', GetPointCloud, False)
@@ -172,7 +176,7 @@ class DepalletizingHelper(object):
         self.run_gripper_client = self._create_client(
             '/gripper/run', SetBool, False)
         self.get_tcp_pose_client = self._create_client(
-            '/get_group_pose', GetGroupPose, False)
+            'aubo/get_group_pose', GetGroupPose, False)
 
         # Service servers towards task scheduler
         self._execute_planning_srv = rospy.Service(
@@ -353,11 +357,29 @@ class DepalletizingHelper(object):
                 elif y_value < 0 and z_value < 1.35:
                     move_aubo_req.state_name = 'D' 
             if self.aubo_pose == move_aubo_req.state_name:
-                rospy.logwarn('No need to change Aubo pose, which is in Pose %s !!!!!' % move_aubo_req.state_name)
+                rospy.logwarn('No need to change Aubo pose, which is in Pose %s !!!!!' % self.aubo_pose)
             else:
                 self.aubo_pose = move_aubo_req.state_name
-                move_aubo_resp = self.move_aubo_client(move_aubo_req)
-                rospy.logwarn('Need to change Aubo pose. Aubo has been successfully moved to Pose %s !!!!!. Recapture pointcloud once again!!!' % move_aubo_req.state_name)
+                if self.move_robot_client in self.enabled_clients:
+                    move_robot_req = ExecuteGroupNamedStatesRequest()
+                    move_robot_req.group_name = 'arm'
+                    if self.aubo_pose == 'A' or self.aubo_pose == 'C':
+                        move_robot_req.state_name = 'left_pre'
+                    elif self.aubo_pose == 'B' or self.aubo_pose == 'D':
+                        move_robot_req.state_name = 'right_pre'
+                # move robot
+                rospy.logwarn('Need to change Robot pre midlle pose.')
+                p1 = Process(target=self.move_robot_proccess, args=(move_robot_req.state_name,))
+                p1.start()
+                # move aubo
+                rospy.logwarn('Need to change Aubo photoing pose.')
+                p2 = Process(target=self.move_aubo_proccess, args=(move_aubo_req.state_name,))
+                p2.start()
+                # wait both finish moving
+                p1.join()
+                p2.join()
+                # capture point cloud one more time after changing pose
+                rospy.logwarn('Recapturing photo after changing pose.')                
                 obj_re_pose = Pose()
                 get_position_resp = self.sim_get_position_client(0)
                 obj_re_pose.position = get_position_resp.position
@@ -366,6 +388,20 @@ class DepalletizingHelper(object):
                 resp.result_status = resp.SUCCEEDED
                 resp.pose = obj_re_pose
         return resp
+
+    def move_robot_proccess(self, state_name):
+        move_robot_req1 = ExecuteGroupNamedStatesRequest()
+        move_robot_req1.group_name = 'arm'
+        move_robot_req1.state_name = state_name
+        move_robot_resp1 = self.move_robot_client(move_robot_req1)       
+        rospy.logwarn('Robot has been successfully moved to Pose %s !!!!!. Then We Move Aubo!!!' % move_robot_req1.state_name)
+
+    def move_aubo_proccess(self, state_name):
+        move_aubo_req1 = ExecuteGroupNamedStatesRequest()
+        move_aubo_req1.group_name = 'aubo'
+        move_aubo_req1.state_name = state_name
+        move_aubo_resp1 = self.move_aubo_client(move_aubo_req1)       
+        rospy.logwarn('Aubo has been successfully moved to Pose %s !!!!!. Recapture pointcloud once again!!!' % move_aubo_req1.state_name)
 
     def _store_detected_info_handle(self, req):
         # store the newest dection info into ros server

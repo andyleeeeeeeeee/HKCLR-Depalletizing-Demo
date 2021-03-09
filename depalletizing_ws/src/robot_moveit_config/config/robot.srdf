@@ -32,20 +32,20 @@
         <joint name="robot_joint6" value="0"/>
     </group_state>
     <group_state name="left_pre" group="arm">
-        <joint name="robot_joint1" value="0.0829"/>
-        <joint name="robot_joint2" value="-1.7568"/>
-        <joint name="robot_joint3" value="2.5506"/>
-        <joint name="robot_joint4" value="0.7786"/>
-        <joint name="robot_joint5" value="-1.5734"/>
-        <joint name="robot_joint6" value="-0.0038"/>
+        <joint name="robot_joint1" value="0.8004"/>
+        <joint name="robot_joint2" value="-1.8953"/>
+        <joint name="robot_joint3" value="2.1806"/>
+        <joint name="robot_joint4" value="1.2872"/>
+        <joint name="robot_joint5" value="-1.5733"/>
+        <joint name="robot_joint6" value="-0.0037"/>
     </group_state>
     <group_state name="right_pre" group="arm">
-        <joint name="robot_joint1" value="0.0777"/>
-        <joint name="robot_joint2" value="1.8904"/>
-        <joint name="robot_joint3" value="-2.4741"/>
-        <joint name="robot_joint4" value="-0.9875"/>
-        <joint name="robot_joint5" value="1.5718"/>
-        <joint name="robot_joint6" value="-0.0037"/>
+        <joint name="robot_joint1" value="0.8004"/>
+        <joint name="robot_joint2" value="1.8953"/>
+        <joint name="robot_joint3" value="-2.1806"/>
+        <joint name="robot_joint4" value="-1.2872"/>
+        <joint name="robot_joint5" value="1.5733"/>
+        <joint name="robot_joint6" value="0.0037"/>
     </group_state>
     <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
     <end_effector name="gripper" parent_link="robot_link6" group="gripper"/>
