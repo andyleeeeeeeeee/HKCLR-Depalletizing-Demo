@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
-from multiprocessing import Process
+import threading
 
 import rospy
 import tf2_ros
@@ -369,15 +369,15 @@ class DepalletizingHelper(object):
                         move_robot_req.state_name = 'right_pre'
                 # move robot
                 rospy.logwarn('Need to change Robot pre midlle pose.')
-                p1 = Process(target=self.move_robot_proccess, args=(move_robot_req.state_name,))
-                p1.start()
+                thread1 = threading.Thread(target=self.move_robot_proccess, args=(move_robot_req.state_name,))
+                thread1.start()
                 # move aubo
                 rospy.logwarn('Need to change Aubo photoing pose.')
-                p2 = Process(target=self.move_aubo_proccess, args=(move_aubo_req.state_name,))
-                p2.start()
+                thread2 = threading.Thread(target=self.move_aubo_proccess, args=(move_aubo_req.state_name,))
+                thread2.start()
                 # wait both finish moving
-                p1.join()
-                p2.join()
+                thread2.join()
+                thread1.join()
                 # capture point cloud one more time after changing pose
                 rospy.logwarn('Recapturing photo after changing pose.')                
                 obj_re_pose = Pose()

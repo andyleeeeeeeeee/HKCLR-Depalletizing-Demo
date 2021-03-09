@@ -13,7 +13,7 @@
                 <Action ID="ExecuteAddBox" auto_subfix="1" box_name="right_wall" box_pose="2.76 -1.2 1.35 0 0 0 1" box_size="5.5 0.001 2.7" group_name="arm" is_absolute="1" name="Add right wall" service_name="robot/execute_add_box"/>
                 <Action ID="ExecuteAddBox" auto_subfix="1" box_name="top_wall" box_pose="2.5 0 2.7 0 0 0 1" box_size="5 2.4 0.001" group_name="arm" is_absolute="1" name="Add top wall" service_name="robot/execute_add_box"/>
                 <Action ID="ExecuteAddBox" auto_subfix="1" box_name="conveyor" box_pose="-1.341 0 0.4 0 0 0 1" box_size="2.56 1.26 0.8" group_name="arm" is_absolute="1" name="Add conveyor" service_name="robot/execute_add_box"/>
-                <Action ID="ExecuteAddBox" auto_subfix="0" box_name="boxsur" box_pose="0.901 0 1.35 0 0 0 1" box_size="0.001 2.4 2.7" group_name="arm" is_absolute="1" name="box_surface" service_name="robot/execute_add_box"/>
+                <Action ID="ExecuteAddBox" auto_subfix="0" box_name="boxsur" box_pose="0.891 0 1.35 0 0 0 1" box_size="0.001 2.4 2.7" group_name="arm" is_absolute="1" name="box_surface" service_name="robot/execute_add_box"/>
             </Sequence>
             <Sequence name="add collisions for Aubo">
                 <Action ID="ExecuteAddBox" auto_subfix="1" box_name="conveyor" box_pose="-0.49 0 -0.4 0 0 0 1" box_size="2.56 1.26 0.8" group_name="aubo" is_absolute="1" name="Add conveyor" service_name="aubo/execute_add_box"/>
@@ -40,7 +40,7 @@
                     <Action ID="ExecuteGroupLinearJointStates" goal="{post_middle_pose}" group_name="arm" name="post middle" service_name="robot/execute_group_joint_states" tolerance="0.01"/>
                     <Action ID="ExecuteGroupLinearJointStates" goal="{place_pose}" group_name="arm" name="place" service_name="robot/execute_group_joint_states" tolerance="0.01"/>
                     <Action ID="ExecuteSuction" enable="0" service_name="execute_suction"/>
-                    <Action ID="ExecuteAddBox" auto_subfix="0" box_name="boxsur" box_pose="0.901 0 1.35 0 0 0 1" box_size="0.001 2.4 2.7" group_name="arm" is_absolute="1" name="box_surface" service_name="robot/execute_add_box"/>
+                    <Action ID="ExecuteAddBox" auto_subfix="0" box_name="boxsur" box_pose="0.891 0 1.35 0 0 0 1" box_size="0.001 2.4 2.7" group_name="arm" is_absolute="1" name="box_surface" service_name="robot/execute_add_box"/>
                     <Action ID="ExecuteGroupLinearJointStates" goal="{pre_middle_pose}" group_name="arm" name="back to pre middle" service_name="robot/execute_group_joint_states" tolerance="0.01"/>
                 </Sequence>
             </Repeat>

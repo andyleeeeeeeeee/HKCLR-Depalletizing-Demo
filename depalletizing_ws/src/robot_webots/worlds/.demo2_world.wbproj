@@ -7,6 +7,5 @@ centralWidgetVisible: 1
 userInteractions: selectionDisabled
 orthographicViewHeight: 1
 textFiles: -1
-globalOptionalRendering: RangeFinderFrustums
 renderingDevicePerspectives: aubo:RangeFinder;1;0.355;0;0.328344
 renderingDevicePerspectives: aubo:camera;1;0.355;0;0
