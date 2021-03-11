@@ -36,12 +36,20 @@ class NaiveDepalletizingPlanner(object):
         # the box comes from whether the left or right side
         if obj_pose[1, 3] >= 0:
             self.pick_from_left = True
-        else: 
+            tcp_pose = obj_pose
+        else:
+            # when on the right we need to rotate tcp wrt base in x-axis for 180 degree
+            Rx180 = np.array([[1,0,0],
+                            [0,-1,0],
+                            [0,0,-1]])
+            tcp_pose = obj_pose
+            tcp_pose[0:3,0:3] = np.dot(Rx180, tcp_pose[0:3,0:3])
             self.pick_from_left = False
+            print(tcp_pose)
         
         # do some picking point planning
             # for simulation only
-        tcp_pose = obj_pose
+        
             # for real robot need to be done in the future
         # tcp_pose = transform.identity_matrix()
         # angle, _, _ = transform.rotation_from_matrix(obj_pose)

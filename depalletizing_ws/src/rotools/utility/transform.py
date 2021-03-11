@@ -1092,7 +1092,7 @@ def quaternion_matrix(quaternion):
 
 
 def quaternion_from_matrix(matrix):
-    """Return quaternion from rotation matrix.
+    """Return quaternion (x y z w) from rotation matrix.
 
     >>> R = rotation_matrix(0.123, (1, 2, 3))
     >>> q = quaternion_from_matrix(R)

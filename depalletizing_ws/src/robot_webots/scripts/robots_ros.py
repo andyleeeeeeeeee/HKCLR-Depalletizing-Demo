@@ -106,18 +106,11 @@ def getObjectPose():
         obj_size = scale_field.getSFVec3f()
         surface_pose.position.x -= obj_size[1] * 0.5
             # orientation
-            # box is on the left
-        if obj_pose.position.y >= 0: 
-            surface_pose.orientation.x = 0.5
-            surface_pose.orientation.y = 0.5
-            surface_pose.orientation.z = 0.5
-            surface_pose.orientation.w = 0.5
-            # box is on the right
-        else:
-            surface_pose.orientation.x = 0.5
-            surface_pose.orientation.y = -0.5
-            surface_pose.orientation.z = 0.5
-            surface_pose.orientation.w = -0.5
+        # contract with honghua that vision will response x-axis to left, y-axis to up, z-axis to front
+        surface_pose.orientation.x = 0.5
+        surface_pose.orientation.y = 0.5
+        surface_pose.orientation.z = 0.5
+        surface_pose.orientation.w = 0.5
         return surface_pose
     else:
         rospy.logerr('No box in scene !!!!!!!!!!!!')
