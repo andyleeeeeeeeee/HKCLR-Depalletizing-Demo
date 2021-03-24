@@ -498,8 +498,12 @@ class MoveGroupInterface(object):
         print(poses)
         plan, fraction = group.compute_cartesian_path(poses, eef_step, jump_threshold=0,
                                                       avoid_collisions=avoid_collisions)
+        if fraction == 1.0:
+            rospy.logwarn('Path planning succussed, fraction is %f !!!!' % fraction)            
+        elif fraction < 1.0 and fraction >= 0:   
+            rospy.logerr('Path planning partially succussed, fraction is only %f !!!!' % fraction)
         # move_group_interface.h  L754
-        if fraction < 0:
+        elif fraction < 0:
             rospy.logerr('Path planning failed, fraction is smaller than 0.')
 
         if stamp:

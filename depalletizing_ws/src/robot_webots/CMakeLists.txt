@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_service_files(
   FILES
   NodeGetPosition.srv
+  NodeGetPose.srv
   NodeGetOrientation.srv
   FieldSetVec3f.srv
   FieldSetRotation.srv

@@ -13,8 +13,8 @@ from rosgraph_msgs.msg import Clock
 from std_srvs.srv import *
 from geometry_msgs.msg import Pose
 from robot_webots.srv import *
-
-
+from rotools.utility import transform
+import numpy as np
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--node-name', dest='nodeName',
@@ -55,6 +55,7 @@ trajectoryFollower = TrajectoryFollower(robot, jointStatePublisher, jointPrefix,
 trajectoryFollower.start()
 rospy.logwarn('Robot TrajectoryFollower is initialized')
 
+box_cnt = 0
 # init gripper
 gripper_ = robot.getConnector('connector')
 rospy.logwarn('Gripper is initialized')
@@ -87,15 +88,15 @@ def getObjectPose():
         t_wb = world_to_base_t.getSFVec3f()
         # obj_pose
         obj_pose = Pose()
-            # position
+            # ros to webots center position
         obj_pose.position.x = t_wo[0] - t_wb[0]  # ros.x = wo.x - wb.x
         obj_pose.position.y = -(t_wo[2] - t_wb[2])    # ros.y = -(wo.z - wb.z)
         obj_pose.position.z = t_wo[1] - t_wb[1]    # ros.z = wo.y - wb.y
-            # orientation
+            # orientation default
         obj_pose.orientation.x = 0.0
         obj_pose.orientation.y = 0.0
-        obj_pose.orientation.z = math.sin((r_wo[3] - math.pi/2) * 0.5)
-        obj_pose.orientation.w = math.cos((r_wo[3] - math.pi/2) * 0.5)
+        obj_pose.orientation.z = 0.0
+        obj_pose.orientation.w = 1.0
 
         # surface_pose
         surface_pose = obj_pose
@@ -104,32 +105,74 @@ def getObjectPose():
         Transform_node = children_field.getMFNode(-1)
         scale_field = Transform_node.getField('scale')
         obj_size = scale_field.getSFVec3f()
-        surface_pose.position.x -= obj_size[1] * 0.5
             # orientation
         # contract with honghua that vision will response x-axis to left, y-axis to up, z-axis to front
-        surface_pose.orientation.x = 0.5
-        surface_pose.orientation.y = 0.5
-        surface_pose.orientation.z = 0.5
-        surface_pose.orientation.w = 0.5
+        # surface_pose.orientation.x = 0.5
+        # surface_pose.orientation.y = 0.5
+        # surface_pose.orientation.z = 0.5
+        # surface_pose.orientation.w = 0.5
+
+        # webots to box orientation
+        wTb = transform.rotation_matrix(r_wo[3],[r_wo[0],r_wo[1],r_wo[2]])
+        # ros to webots orientation
+        rTw= [ [1, 0, 0,0],
+                [0, 0, -1,0],
+                [0, 1, 0,0],
+                [0, 0, 0,1]]
+        # ros to box orientation
+        rTb = np.dot(rTw,wTb)
+        rx90 = [ [1, 0, 0,0],
+                [0, 0, -1,0],
+                [0, 1, 0,0],
+                [0, 0, 0,1]]
+        # ros to box surface orientation
+        bTs = np.dot(rTb,rx90)
+        surface_quat = transform.quaternion_from_matrix(bTs)
+        surface_pose.orientation.x = surface_quat[0]
+        surface_pose.orientation.y = surface_quat[1]
+        surface_pose.orientation.z = surface_quat[2]
+        surface_pose.orientation.w = surface_quat[3]
+
+        # ros to box surface position
+        bTs[0,3] = surface_pose.position.x
+        bTs[1,3] = surface_pose.position.y
+        bTs[2,3] = surface_pose.position.z
+        zback = [[1, 0, 0,0],
+                [0, 1, 0,0],
+                [0, 0, 1,-obj_size[1] * 0.5],
+                [0, 0, 0,1]] 
+        bTs = np.dot(bTs,zback)    
+        surface_pose.position.x = bTs[0,3]
+        surface_pose.position.y = bTs[1,3]
+        surface_pose.position.z = bTs[2,3]
+        global box_cnt
+        box_cnt += 1
+        rospy.logwarn('sensed box %d pose: Positon = [%f,%f,%f]; Orientation = [%f,%f,%f,%f]!'%(box_cnt, surface_pose.position.x,surface_pose.position.y,surface_pose.position.z,surface_pose.orientation.x,surface_pose.orientation.y,surface_pose.orientation.z,surface_pose.orientation.w))
         return surface_pose
     else:
         rospy.logerr('No box in scene !!!!!!!!!!!!')
         obj_pose = Pose()
         return obj_pose
 
-# getPosition Callback
-def getPositionSrvCb(req):
-    pose = getObjectPose()
-    resp = NodeGetPositionResponse()
-    resp.position = pose.position
+# getPose Callback
+def getPoseSrvCb(req):
+    resp = NodeGetPoseResponse()
+    resp.pose = getObjectPose()
     return resp
 
-# getOrientation Callback
-def getOrientationSrvCb(req):
-    pose = getObjectPose()
-    resp = NodeGetOrientationResponse()
-    resp.orientation = pose.orientation
-    return resp
+# getPosition Callback
+# def getPositionSrvCb(req):
+#     pose = getObjectPose()
+#     resp = NodeGetPositionResponse()
+#     resp.position = pose.position
+#     return resp
+
+# # getOrientation Callback
+# def getOrientationSrvCb(req):
+#     pose = getObjectPose()
+#     resp = NodeGetOrientationResponse()
+#     resp.orientation = pose.orientation
+#     return resp
 
 # setPosition Callback
 def setPositionSrvCb(req):
@@ -266,10 +309,12 @@ srv_run_gripper = rospy.Service(
 rospy.logwarn('gripper is initialized')
 
 # run obj handler servers
-srv_get_obj_position_ = rospy.Service(
-    '/simulation/supervisor/get_position', NodeGetPosition, getPositionSrvCb)
-srv_get_obj_orientation_ = rospy.Service(
-    '/simulation/supervisor/get_orientation', NodeGetOrientation, getOrientationSrvCb)
+# srv_get_obj_position_ = rospy.Service(
+#     '/simulation/supervisor/get_position', NodeGetPosition, getPositionSrvCb)
+# srv_get_obj_orientation_ = rospy.Service(
+#     '/simulation/supervisor/get_orientation', NodeGetOrientation, getOrientationSrvCb)
+srv_get_obj_pose_ = rospy.Service(
+     '/simulation/supervisor/get_pose', NodeGetPose, getPoseSrvCb)
 srv_set_obj_position_ = rospy.Service(
     '/simulation/supervisor/set_position', FieldSetVec3f, setPositionSrvCb)
 srv_set_obj_orientation_ = rospy.Service(

@@ -33,17 +33,32 @@ class NaiveDepalletizingPlanner(object):
         self.pick_from_left = True
 
     def picking_plan(self, obj_pose):
+        # reach the limit in z-axis
+        MaxZ = 2.424
+        MinZ = 0.49
+        if obj_pose[2, 3] > MaxZ:
+            obj_pose[2, 3] = MaxZ
+        if obj_pose[2, 3] < MinZ:
+            obj_pose[2, 3] = MinZ
+
         # the box comes from whether the left or right side
+        MaxY = 0.95
         if obj_pose[1, 3] >= 0:
             self.pick_from_left = True
+            # reach the limit in y-axis
+            if obj_pose[1, 3] > MaxY:
+                obj_pose[1, 3] = MaxY
             tcp_pose = obj_pose
         else:
-            # when on the right we need to rotate tcp wrt base in x-axis for 180 degree
-            Rx180 = np.array([[1,0,0],
-                            [0,-1,0],
-                            [0,0,-1]])
+            # reach the limit in y-axis
+            if obj_pose[1, 3] < -MaxY:
+                obj_pose[1, 3] = -MaxY
+            # when on the right we need to rotate tcp wrt itself in z-axis for 180 degree
             tcp_pose = obj_pose
-            tcp_pose[0:3,0:3] = np.dot(Rx180, tcp_pose[0:3,0:3])
+            Rz180 = np.array([[-1,0,0],
+                              [0,-1,0],
+                              [0,0,1]])
+            tcp_pose[0:3,0:3] = np.dot(tcp_pose[0:3,0:3],Rz180)
             self.pick_from_left = False
             print(tcp_pose)
         
@@ -73,10 +88,20 @@ class NaiveDepalletizingPlanner(object):
         pre_pick_offset = get_param('pre_pick_offset', [-0.1, 0, 0])
         pre_pick_tcp_pose = offset_ros_pose(pick_tcp_pose, pre_pick_offset)
         # pull out planning
-        post_pick_offset = get_param('post_pick_offset', [-0.4, 0, 0.1])
+        post_pick_offset = get_param('post_pick_offset', [-0.43, 0, 0.3])
+
+        # can not be raised up any more cause it will collide with the roof
+        if obj_pose[2, 3] >= MaxZ:
+            post_pick_offset[2] = 0
+        elif obj_pose[2, 3] <MaxZ and obj_pose[2, 3]>= (MaxZ - post_pick_offset[2]):
+            post_pick_offset[2] = MaxZ - obj_pose[2, 3]
+
         post_pick_edge_offset = [0, 0, 0]
         post_pick_edge_offset[0] = post_pick_offset[0]
-        if abs(obj_pose[1, 3]) >= 0.5:
+
+        BestY = 0.65
+        # first pull out action "post_pick_tcp_pose"
+        if abs(obj_pose[1, 3]) >= BestY:
             # raise and pull out
             post_pick_tcp_pose = offset_ros_pose(pick_tcp_pose, post_pick_offset)
         else:
@@ -84,28 +109,24 @@ class NaiveDepalletizingPlanner(object):
             post_pick_offset[0] = 0
             post_pick_tcp_pose = offset_ros_pose(pick_tcp_pose, post_pick_offset)
 
-
+        # second pull ou action "post_pick_edge_offset"
         # if box is far from origin in y direction, it has to come back a little in case of collision with side wall.
-        if abs(obj_pose[1, 3]) >= 0.7:
-            # if y > 0.5, we have pull it out before, and we pull out a little more for it to get close to center
-            post_pick_edge_offset[0] = -0.1
+        if abs(obj_pose[1, 3]) >= BestY:
+            # if y > BestY, we have pull it out before, and we pull out a little more for it to get close to center
+            post_pick_edge_offset[0] = -0.02
             if self.pick_from_left:
-                post_pick_edge_offset[1] -= 0.2
+                post_pick_edge_offset[1] -= (abs(obj_pose[1, 3])-BestY)
             else:
-                post_pick_edge_offset[1] += 0.2       
+                post_pick_edge_offset[1] += (abs(obj_pose[1, 3])-BestY)       
+
         # if box is close from origin in y direction, it has to come out a little because of workspace limitation.
-        # if y < 0.5, we still did not pull out the box, and we pull out here
-        elif abs(obj_pose[1, 3]) >= 0.25 and abs(obj_pose[1, 3]) < 0.5:
+        # if y < BestY, we still did not pull out the box, and we pull out here and add a small offset
+        elif abs(obj_pose[1, 3]) < BestY:
+            post_pick_edge_offset[0] -= 0.03
             if self.pick_from_left:
-                post_pick_edge_offset[1] += 0.25
+                post_pick_edge_offset[1] += (BestY-abs(obj_pose[1, 3]))
             else:
-                post_pick_edge_offset[1] -= 0.25
-                
-        elif abs(obj_pose[1, 3]) < 0.25:
-            if self.pick_from_left:
-                post_pick_edge_offset[1] += 0.5
-            else:
-                post_pick_edge_offset[1] -= 0.5 
+                post_pick_edge_offset[1] -= (BestY-abs(obj_pose[1, 3]))
 
         post_pick_tcp_pose_edge = offset_ros_pose(post_pick_tcp_pose, post_pick_edge_offset)
         return pick_tcp_pose, pre_pick_tcp_pose, post_pick_tcp_pose, post_pick_tcp_pose_edge
@@ -158,10 +179,12 @@ class DepalletizingHelper(object):
         # Clients for querying services provided by simulated devices
         self.sim_delete_box_client = self._create_client(
             '/supervisor/delete_box', Trigger)
-        self.sim_get_position_client = self._create_client(
-            '/supervisor/get_position', NodeGetPosition)
-        self.sim_get_orientation_client = self._create_client(
-            '/supervisor/get_orientation', NodeGetOrientation)
+        self.sim_get_pose_client = self._create_client(
+            '/supervisor/get_pose', NodeGetPose)
+        # self.sim_get_position_client = self._create_client(
+        #     '/supervisor/get_position', NodeGetPosition)
+        # self.sim_get_orientation_client = self._create_client(
+        #     '/supervisor/get_orientation', NodeGetOrientation)
         self.sim_set_position_client = self._create_client(
             '/supervisor/set_position', FieldSetVec3f)
         self.sim_set_rotation_client = self._create_client(
@@ -280,7 +303,7 @@ class DepalletizingHelper(object):
         All poses are relevant to the robot base frame
         """
         # decide whether to move forward the base before next pick
-        if req.pose.position.x <= 0.91:
+        if req.pose.position.x <= 0.93:
             obj_pose = sd_pose(req.pose)
         else:
             if self.sim_move_base_client in self.enabled_clients:
@@ -338,13 +361,16 @@ class DepalletizingHelper(object):
         else:
             rospy.logdebug('Get point cloud client is not enabled')
 
-        if self.sim_get_position_client in self.enabled_clients and \
-                self.sim_get_orientation_client in self.enabled_clients:
+        if self.sim_get_pose_client in self.enabled_clients:
+        # self.sim_get_position_client in self.enabled_clients and \
+        #         self.sim_get_orientation_client in self.enabled_clients
             obj_pose = Pose()
-            get_position_resp = self.sim_get_position_client(0)
-            obj_pose.position = get_position_resp.position
-            get_orientation_resp = self.sim_get_orientation_client(0)
-            obj_pose.orientation = get_orientation_resp.orientation
+            # get_position_resp = self.sim_get_position_client(0)
+            # obj_pose.position = get_position_resp.position
+            # get_orientation_resp = self.sim_get_orientation_client(0)
+            # obj_pose.orientation = get_orientation_resp.orientation
+            get_pose_resp = self.sim_get_pose_client(0)
+            obj_pose = get_pose_resp.pose
 
             # for sim, we omit translation between base frame to camera frame (hand-eye calibration)
             resp.result_status = resp.SUCCEEDED
@@ -389,10 +415,8 @@ class DepalletizingHelper(object):
                 # capture point cloud one more time after changing pose
                 rospy.logwarn('Recapturing photo after changing pose.')                
                 obj_re_pose = Pose()
-                get_position_resp = self.sim_get_position_client(0)
-                obj_re_pose.position = get_position_resp.position
-                get_orientation_resp = self.sim_get_orientation_client(0)
-                obj_re_pose.orientation = get_orientation_resp.orientation
+                get_pose_resp = self.sim_get_pose_client(0)
+                obj_re_pose = get_pose_resp.pose
                 resp.result_status = resp.SUCCEEDED
                 resp.pose = obj_re_pose
         return resp

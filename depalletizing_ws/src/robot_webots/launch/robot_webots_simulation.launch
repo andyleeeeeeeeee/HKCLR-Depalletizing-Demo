@@ -3,7 +3,7 @@
   <!-- start Webots -->
   <env name="WEBOTS_HOME" value="/usr/local/webots" />
   <arg name="no-gui" default="false," doc="Start Webots with minimal GUI"/>
-  <arg name="world" default="demo2"/>
+  <arg name="world" default="demo3"/>
 
   <include file="$(find robot_webots)/launch/webots.launch">
     <arg name="mode" value="realtime"/>

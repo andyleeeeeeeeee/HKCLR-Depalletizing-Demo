@@ -43,4 +43,25 @@ if __name__ == "__main__":
     # quat = [0.5,-0.5,0.5,-0.5]
     # print(transform.quaternion_from_matrix(np.dot(Rx90, matrix)))
     # print(np.around(transform.quaternion_matrix(quat)))
-    print(Rz90[0:3,0:3])
+    # print(Rz90[0:3,0:3])
+
+    # print(transform.rotation_matrix(-2.09991,[0.57908,-0.577581,-0.575384]))
+    rTw = [ [1, 0, 0],
+            [0, 0, -1],
+            [0, 1, 0]] 
+    # rTw = [ [0, 1, 0],
+    #         [0, 0, -1],
+    #         [-1, 0, 0]] 
+
+    wTb = [ [0, -1, 0],
+            [0, 0, 1],
+            [-1, 0, 0]]
+    # # rTb = [ [0, 0, 1],
+    # #         [1, 0, 0],
+    # #         [0, 1, 0]]
+    # # print(np.dot(rTb,np.linalg.inv(wTb)))
+    # rTb = transform.identity_matrix()
+    # rTb[0:3,0:3] = np.dot(rTw,wTb)
+    # print(rTb)
+    # print(transform.quaternion_from_matrix(rTb))
+    print(Rx90[0,1])

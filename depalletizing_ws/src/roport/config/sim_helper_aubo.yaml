@@ -1,7 +1,7 @@
 
 # pre pick and post pick params [x, y, z] wrt robot base frame
 pre_pick_offset: [-0.1, 0, 0]
-pre_place_offset: [-0.4, 0, 0.1]
+post_pick_offset: [-0.43, 0, 0.3]
 
 # pre-defined middle poses in joint states (rad)
 ## left
