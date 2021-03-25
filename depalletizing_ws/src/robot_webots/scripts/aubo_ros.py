@@ -33,6 +33,7 @@ if jointPrefix:
     print('Setting prefix to %s' % jointPrefix)
 
 robot = Supervisor()
+root_field_ = robot.getRoot().getField('children')
 rangefinder = robot.getRangeFinder('RangeFinder')
 camera = robot.getCamera('camera')
 
@@ -56,7 +57,24 @@ rospy.logwarn('Aubo TrajectoryFollower is initialized')
 # clockPublisher = rospy.Publisher('clock', Clock, queue_size=1)
 # if not rospy.get_param('use_sim_time', False):
 #     rospy.logwarn('use_sim_time is not set!')
+# deleteBox Callback
+def deleteBoxSrvCb(req):
+    # rospy.sleep(0.5)
+    resp = TriggerResponse()
+    last_obj_id = root_field_.getCount()-1
+    obj_node = root_field_.getMFNode(last_obj_id)
+    name_field = obj_node.getField('name')
+    if name_field.getSFString().find('box') != -1:
+        obj_node.remove()
+        rospy.logwarn('Box has been deleted!')
+        resp.success = True
+    else:
+        rospy.logerr('can not delete box !!!!!!!!')
+        resp.success = False
+    return resp
 
+srv_delete_box = rospy.Service(
+    '/simulation/supervisor/delete_box', Trigger, deleteBoxSrvCb)    
 timestep = int(robot.getBasicTimeStep())
 rangefinder.enable(timestep)
 camera.enable(timestep)

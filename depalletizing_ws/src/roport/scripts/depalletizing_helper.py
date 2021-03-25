@@ -266,7 +266,7 @@ class DepalletizingHelper(object):
             run_resp = self.sim_run_gripper_client(req.enable)
             # delete box after drop
             if not req.enable:
-                rospy.sleep(0.6)
+                rospy.sleep(0.5)
                 delete_box_resp = self.sim_delete_box_client()
             if run_resp.success:
                 resp.result_status = resp.SUCCEEDED
@@ -303,7 +303,7 @@ class DepalletizingHelper(object):
         All poses are relevant to the robot base frame
         """
         # decide whether to move forward the base before next pick
-        if req.pose.position.x <= 0.93:
+        if req.pose.position.x <= 0.95:
             obj_pose = sd_pose(req.pose)
         else:
             if self.sim_move_base_client in self.enabled_clients:

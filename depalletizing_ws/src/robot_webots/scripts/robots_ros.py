@@ -245,19 +245,19 @@ def changeBoxSizeSrvCb(req):
     return resp
 
 # deleteBox Callback
-def deleteBoxSrvCb(req):
-    resp = TriggerResponse()
-    last_obj_id = root_field_.getCount()-1
-    obj_node = root_field_.getMFNode(last_obj_id)
-    name_field = obj_node.getField('name')
-    if name_field.getSFString().find('box') != -1:
-        obj_node.remove()
-        rospy.logwarn('Box has been deleted!')
-        resp.success = True
-    else:
-        rospy.logerr('can not delete box !!!!!!!!')
-        resp.success = False
-    return resp
+# def deleteBoxSrvCb(req):
+#     resp = TriggerResponse()
+#     last_obj_id = root_field_.getCount()-1
+#     obj_node = root_field_.getMFNode(last_obj_id)
+#     name_field = obj_node.getField('name')
+#     if name_field.getSFString().find('box') != -1:
+#         obj_node.remove()
+#         rospy.logwarn('Box has been deleted!')
+#         resp.success = True
+#     else:
+#         rospy.logerr('can not delete box !!!!!!!!')
+#         resp.success = False
+#     return resp
 
 # moveBase Callback
 def moveBaseSrvCb(req):
@@ -321,8 +321,8 @@ srv_set_obj_orientation_ = rospy.Service(
     '/simulation/supervisor/set_orientation', FieldSetRotation, setOrientationSrvCb)
 srv_change_box_size = rospy.Service(
     '/simulation/supervisor/change_box_size', SetSize, changeBoxSizeSrvCb)
-srv_delete_box = rospy.Service(
-    '/simulation/supervisor/delete_box', Trigger, deleteBoxSrvCb)
+# srv_delete_box = rospy.Service(
+#     '/simulation/supervisor/delete_box', Trigger, deleteBoxSrvCb)
 rospy.logwarn('Object handler is initialized')
 
 # move base server
