@@ -5,6 +5,7 @@
     <!-- Load robot description format (URDF) -->
     <param name="robot_description" textfile="$(find robot_description)/robots/robot_arm.urdf"/>
 
+<group ns="robot">
     <node pkg="robot_controller" type="robot_node" name="robot_node" output="screen">
         <param name="ip_address" value="192.168.1.10" />
         <param name="use_fake_driver" value="true" />
@@ -17,6 +18,6 @@
   <!-- Load the controllers -->
   <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
     output="screen" args="arm_controller joint_state_controller"/>
-
+</group>
 
 </launch>

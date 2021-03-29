@@ -9,9 +9,10 @@ int i = 0;
 RobotFakeDriver::RobotFakeDriver() : RobotDriver() {
   idx = 0.0;
   ROS_INFO("jointNames size = %d\n", jointNames.size());
-  for(int i = 0; i < jointNames.size(); i++) {
-      currentJointPosition.push_back(0);
-  }
+//   for(int i = 0; i < jointNames.size(); i++) {
+//       currentJointPosition.push_back(0);
+//   }
+    currentJointPosition = {0.8004, -1.8953, 2.1806, 1.2872, -1.5733, -0.0037};
 }
 
 RobotFakeDriver::~RobotFakeDriver() {

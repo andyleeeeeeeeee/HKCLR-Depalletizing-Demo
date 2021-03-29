@@ -103,26 +103,31 @@ roslaunch robot_webots robot_webots_simulation.launch
 ````
 ### For Aubo robot, launch moveit move_group with kdl kinematics plugin and move_group_interface server
 ````
-roslaunch robot_controller moveit_group_aubo.launch
+roslaunch robot_controller moveit_group_aubo.launch use_sim_time:=true
 ````
 ### For SelfDeveloped robot, launch moveit move_group with ikfast kinematics plugin and move_group_interface server
 ````
-roslaunch robot_controller moveit_group_robot.launch
+roslaunch robot_controller moveit_group_robot.launch use_sim_time:=true
 ````
 ### Launch the depalletizing demo
 ````
-roslaunch roport hkcenter_depalletizing_simulation_aubo.launch
+roslaunch roport hkcenter_depalletizing_simulation_aubo.launch use_sim_time:=true
 ````
 
 ## Real Robot
 ### Launch ros controller of SelfRobot and its hardware interface
-Currently, only fake controller is available.
+Note: If you have self-defined action server and joint states pulisher, you can not launch this!!!    
+This ia a fake controller to visualize the movement of robot under motion planning algorithm so we can debug easily.
 ````
 roslaunch robot_controller ArmController.launch
 ````
-### Launch moveit move_group with ikfast kinematics plugin
+### For SelfDeveloped robot, launch moveit move_group with ikfast kinematics plugin and move_group_interface server
 ````
 roslaunch robot_controller moveit_group_robot.launch use_sim_time:=false
 ````
 Now you can control real SelfRobot by MontionPlanning Plugin in Rviz
-### Other complex function is still being developing
+### running motion planning pipeline
+You need to make sure that the x coordinate (wrt. base) of robot's gripper is less than 0.85m, so that it can initialize successfully and start working. The reason of this is to prevent gripper from collision with boxes in front when initialize. After then, type in following cmd to let the robot perform depalletize job:
+````
+roslaunch roport hkcenter_depalletizing_real.launch use_sim_time:=false
+````

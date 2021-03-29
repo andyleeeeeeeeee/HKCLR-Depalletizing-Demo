@@ -61,25 +61,6 @@ class NaiveDepalletizingPlanner(object):
             tcp_pose[0:3,0:3] = np.dot(tcp_pose[0:3,0:3],Rz180)
             self.pick_from_left = False
             print(tcp_pose)
-        
-        # do some picking point planning
-            # for simulation only
-        
-            # for real robot need to be done in the future
-        # tcp_pose = transform.identity_matrix()
-        # angle, _, _ = transform.rotation_from_matrix(obj_pose)
-        # if -np.pi * 0.5 <= angle <= np.pi * 0.5:
-        #     tcp_pose[0:3, 0] = obj_pose[0:3, 0]  # tcp.x = obj.x
-        #     tcp_pose[0:3, 1] = -obj_pose[0:3, 1]  # tcp.y = -obj.y
-        # else:
-        #     tcp_pose[0:3, 0] = -obj_pose[0:3, 0]  # tcp.x = -obj.x
-        #     tcp_pose[0:3, 1] = obj_pose[0:3, 1]  # tcp.y = obj.y
-
-        # tcp_pose[0:3, 2] = -obj_pose[0:3, 2]  # tcp.z = -obj.z
-        
-        # make sure the vacuum could touch the box
-        # offset = -0.02  
-        # tcp_pose[0:3, 3] = obj_pose[0:3, 3] + np.array([0, 0, offset])
 
         # pick
         pick_tcp_pose = to_ros_pose(tcp_pose)
