@@ -94,14 +94,15 @@ class MoveItServer(object):
         return resp
 
     def group_many_poses_handle(self, req):
+        # we use tolerance to be the switch for controlling the constraint of joint 5 and 6. 
         if not req.tolerance:
-            req.tolerance = 0.01
+            req.tolerance = 0
 
         if not req.eef_step:
             req.eef_step = 0.1
 
         if req.goal_type == req.GLOBAL_BASE:
-            plan = self.interface.build_absolute_path_for_group(req.group_name, req.goals, None, True, req.eef_step)
+            plan = self.interface.build_absolute_path_for_group(req.group_name, req.goals, None, True, req.eef_step, req.tolerance)
             ok = self.interface.execute_plan_for_group(req.group_name, plan)
             waypoints_number = len(req.goals.poses)
             # ok = self.interface._wait_pose_goal_execution(req.group_name, req.goals.poses[waypoints_number-1], req.tolerance)
@@ -113,8 +114,9 @@ class MoveItServer(object):
         return resp
 
     def group_js_handle(self, req):
+        # we use tolerance to be the switch for controlling the constraint of joint 5 and 6.
         if not req.tolerance:
-            req.tolerance = 0.01
+            req.tolerance = 0
         ok = self.interface.group_go_to_joint_states(req.group_name, req.goal, req.tolerance)
         resp = ExecuteGroupJointStatesResponse()
         resp.result_status = resp.SUCCEEDED if ok else resp.FAILED

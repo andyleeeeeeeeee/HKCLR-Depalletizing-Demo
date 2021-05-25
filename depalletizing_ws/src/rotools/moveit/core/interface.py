@@ -178,7 +178,7 @@ class MoveGroupInterface(object):
         assert group_id is not None
         return self.ee_links[group_id], self.ref_frames[group_id]
 
-    def group_go_to_joint_states(self, group_name, goal, tolerance=0.01):
+    def group_go_to_joint_states(self, group_name, goal, tolerance=0):
         """Set the joint states of a group as goal.
 
         :param group_name: str Controlled group name
@@ -187,9 +187,41 @@ class MoveGroupInterface(object):
         :return: bool
         """
         group = self._get_group_by_name(group_name)
-        group.go(goal, wait=True)
+        if tolerance:
+           joint_current = group.get_current_joint_values()
+           constraints = MoveItMsg.Constraints()
+           constraints.name = "freeze the J5 and J6"
+        #    J5 constraint
+           j5_constraint = MoveItMsg.JointConstraint()
+           j5_constraint.position = joint_current[4]
+           j5_constraint.tolerance_above = 0.0
+           j5_constraint.tolerance_below = 0.0
+           j5_constraint.weight = 1  
+           j5_constraint.joint_name = "robot_joint5"
+           constraints.joint_constraints.append(j5_constraint)
+           rospy.logwarn('Path planning with J5 joint constraint !!!!!!!!!!!') 
+           goal_constrainted = list(goal)
+           goal_constrainted[4] = joint_current[4]       
+        #    J6 constraint
+           j6_constraint = MoveItMsg.JointConstraint()
+           j6_constraint.position = joint_current[5]
+           j6_constraint.tolerance_above = 0.0
+           j6_constraint.tolerance_below = 0.0
+           j6_constraint.weight = 1
+           j6_constraint.joint_name = "robot_joint6"
+           constraints.joint_constraints.append(j6_constraint)
+           rospy.logwarn('Path planning with J6 joint constraint !!!!!!!!!!!') 
+           goal_constrainted[5] = joint_current[5]
+           goal = tuple(goal_constrainted)
+           group.set_path_constraints(constraints)
+        else:
+           group.set_path_constraints(None) 
+
+        ok = group.go(goal, wait=True)
         group.stop()
-        return self._wait_js_goal_execution(group_name, goal, tolerance)
+        group.clear_path_constraints()
+        # return self._wait_js_goal_execution(group_name, goal, tolerance)
+        return ok
 
     @staticmethod
     def _group_go_to_predefined_target(group):
@@ -480,7 +512,7 @@ class MoveGroupInterface(object):
         #     plan.joint_trajectory.points[i].time_from_start = rospy.Duration.from_sec(t * (i + 1))
         return updated_plan
 
-    def build_absolute_path_for_group(self, group_name, poses, stamp=None, avoid_collisions=True, eef_step=0.1):
+    def build_absolute_path_for_group(self, group_name, poses, stamp=None, avoid_collisions=True, eef_step=0.1, joint_constraint=0):
         """Given way points in a list of geometry_msgs.Pose, plan a path
         go through all way points.
 
@@ -492,6 +524,33 @@ class MoveGroupInterface(object):
         group_id = self._get_group_id(group_name)
         assert group_id is not None
         group = self.move_groups[group_id]
+
+        if joint_constraint:
+           joint_current = group.get_current_joint_values()
+           constraints = MoveItMsg.Constraints()
+           constraints.name = "freeze the J5 and J6"
+        #    J5 constraint
+           j5_constraint = MoveItMsg.JointConstraint()
+           j5_constraint.position = joint_current[4]
+           j5_constraint.tolerance_above = 0.0
+           j5_constraint.tolerance_below = 0.0
+           j5_constraint.weight = 1  
+           j5_constraint.joint_name = "robot_joint5"
+           constraints.joint_constraints.append(j5_constraint)
+           rospy.logwarn('Path planning with J5 joint constraint !!!!!!!!!!!')           
+        #    J6 constraint
+           j6_constraint = MoveItMsg.JointConstraint()
+           j6_constraint.position = joint_current[5]
+           j6_constraint.tolerance_above = 0.0
+           j6_constraint.tolerance_below = 0.0
+           j6_constraint.weight = 1
+           j6_constraint.joint_name = "robot_joint6"
+           constraints.joint_constraints.append(j6_constraint)
+           rospy.logwarn('Path planning with J6 joint constraint !!!!!!!!!!!')
+           group.set_path_constraints(constraints)
+        else:
+           group.set_path_constraints(None) 
+
         if isinstance(poses, GeometryMsg.PoseArray):
             poses = poses.poses
         print('excutemanyposes')
@@ -532,7 +591,9 @@ class MoveGroupInterface(object):
     def execute_plan_for_group(self, group_name, plan, wait=True):
         group_id = self._get_group_id(group_name)
         assert group_id is not None
-        return self.move_groups[group_id].execute(plan, wait)
+        ok = self.move_groups[group_id].execute(plan, wait)  
+        self.move_groups[group_id].clear_path_constraints()
+        return ok
 
     def build_absolute_paths_for_all(self, all_poses, all_stamps=None, avoid_collisions=True):
         """
@@ -626,7 +687,7 @@ class MoveGroupInterface(object):
         return True
 
     def attach_box(self, group_name, eef_group_name, box_name, box_pose, box_size):
-        ok = self.add_box(group_name, box_name, box_pose, box_size, is_absolute=True, auto_subfix=False)
+        ok = self.add_box(group_name, box_name, box_pose, box_size, is_absolute=False, auto_subfix=False)
         if not ok:
             return False
         group = self._get_group_by_name(group_name)
