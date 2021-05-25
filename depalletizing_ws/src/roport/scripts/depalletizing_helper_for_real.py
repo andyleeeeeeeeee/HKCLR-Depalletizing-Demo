@@ -154,7 +154,8 @@ class DepalletizingHelper(object):
           ## |y| has to be smaller than 0.95m, if y >= 0, is on left; if y<0, is on right.
           ## z has to be within 0.49m to 2.424m
           ## self.goalpoints = [[x1,y1,z1],[x2,y2,z2],...,...,[xn,yn,zn]]  
-        self.goalpoints = [[0.9,0.6,0.7],[0.9,0.6,1.8],[0.9,-0.6,0.7],[0.9,-0.6,1.8],[0.9,0.6,0.7]]
+        #self.goalpoints = [[0.9,0.6,0.7],[0.9,0.6,1.8],[0.9,-0.6,0.7],[0.9,-0.6,1.8],[0.9,0.6,0.7]]
+        self.goalpoints = [[0.9,0.2,0.7],[0.9,0.2,0.7],[0.9,0.2,0.7],[0.9,0.2,0.7],[0.9,0.2,0.7]]
         self.goalpointcnt = 0
         # switch for Parallel Running
         # self.store_DI_state = False
