@@ -13,10 +13,17 @@ from std_srvs.srv import SetBool, Trigger
 from robot_webots.srv import *
 
 from roport.srv import *
+from smarteye.srv import *
 
 from rotools.utility.common import sd_pose, to_ros_pose, get_param, offset_ros_pose, set_param, all_close
 from rotools.utility import transform
 
+# vision dependence
+from boxdemo import stack_detection
+import pcl
+from sensor_msgs import point_cloud2 as pc2
+from cv_bridge import CvBridge
+import pcl2_img
 
 # maybe in need in the future
 # class BoxPickingHelper(object):
@@ -35,8 +42,10 @@ class NaiveDepalletizingPlanner(object):
         MaxZ = 2.424
         MinZ = 0.49
         if obj_pose[2, 3] > MaxZ:
+            rospy.logerr('Target box is too high to reach and I can only reach the MaxZ at %f m' % MaxZ)
             obj_pose[2, 3] = MaxZ
         if obj_pose[2, 3] < MinZ:
+            rospy.logerr('Target box is too low to reach and I can only reach the MinZ at %f m' % MinZ)
             obj_pose[2, 3] = MinZ
 
         # the box comes from whether the left or right side
@@ -45,11 +54,13 @@ class NaiveDepalletizingPlanner(object):
             self.pick_from_left = True
             # reach the limit in y-axis
             if obj_pose[1, 3] > MaxY:
+                rospy.logerr('Target box is too letf to reach and I can only reach the MaxY at %f m' % MaxY)
                 obj_pose[1, 3] = MaxY
             tcp_pose = obj_pose
         else:
             # reach the limit in y-axis
             if obj_pose[1, 3] < -MaxY:
+                rospy.logerr('Target box is too right to reach and I can only reach the MinY at -%f m' % MaxY)
                 obj_pose[1, 3] = -MaxY
             # when on the right we need to rotate tcp wrt itself in z-axis for 180 degree
             tcp_pose = obj_pose
@@ -58,7 +69,6 @@ class NaiveDepalletizingPlanner(object):
                               [0,0,1]])
             tcp_pose[0:3,0:3] = np.dot(tcp_pose[0:3,0:3],Rz180)
             self.pick_from_left = False
-            print(tcp_pose)
 
         # pick
         pick_tcp_pose = to_ros_pose(tcp_pose)
@@ -139,6 +149,9 @@ class DepalletizingHelper(object):
     def __init__(self, ):
         super(DepalletizingHelper, self).__init__()
         
+        # hand_eye_relationship x, y, z, ox, oy, oz, ow, need to be defined or get when run time
+        self.hand_eye_relationship_ = [0,0,0,0,0,0,1]
+
         # planner for pick and place pose
         self.planner = NaiveDepalletizingPlanner()
 
@@ -172,8 +185,8 @@ class DepalletizingHelper(object):
         self.move_robot_client = self._create_client(
             '/robot/execute_group_named_states', ExecuteGroupNamedStates, False) 
         # Clients for querying services provided by real devices
-        # self.get_pointcloud_client = self._create_client(
-        #     '/hv1000/get_pointcloud', GetPointCloud, False)
+        self.get_pointcloud_client = self._create_client(
+            '/hv1000/get_pointcloud', GetPointCloud, False)
         # self.get_object_info_client = self._create_client(
         #     '/vision/get_object_info', GetObjectPose, False)
         # self.run_gripper_client = self._create_client(
@@ -191,9 +204,9 @@ class DepalletizingHelper(object):
         self._connect_waypoints_srv = rospy.Service(
             'connect_waypoints', ConnectWaypoints, self._connect_waypoints_handle
         )
-        # self._execute_suction_srv = rospy.Service(
-        #     'execute_suction', ExecuteSuction, self._execute_suction_handle
-        # )
+        self._execute_suction_srv = rospy.Service(
+            'execute_suction', ExecuteSuction, self._execute_suction_handle
+        )
         self._sense_object_pose_srv = rospy.Service(
             'sense_object_pose', SenseObjectPose, self.sense_object_pose_handle
         )
@@ -225,26 +238,22 @@ class DepalletizingHelper(object):
             rospy.logwarn('Service ' + full_id + ' not available')
             return None
 
-    # def _execute_suction_handle(self, req):
-    #     resp = ExecuteSuctionResponse()
-    #     if self.run_gripper_client in self.enabled_clients:
-    #         run_resp = self.run_gripper_client(req.enable)
-    #         if run_resp.success:
-    #             resp.result_status = resp.SUCCEEDED
-    #         else:
-    #             resp.result_status = resp.FAILED
-    #             return resp
-    #     if self.sim_run_gripper_client in self.enabled_clients:
-    #         run_resp = self.sim_run_gripper_client(req.enable)
-    #         # delete box after drop
-    #         if not req.enable:
-    #             rospy.sleep(0.5)
-    #             delete_box_resp = self.sim_delete_box_client()
-    #         if run_resp.success:
-    #             resp.result_status = resp.SUCCEEDED
-    #         else:
-    #             resp.result_status = resp.FAILED
-    #     return resp
+    def _execute_suction_handle(self, req):
+        resp = ExecuteSuctionResponse()
+        # if self.run_gripper_client in self.enabled_clients:
+        #     run_resp = self.run_gripper_client(req.enable)
+        #     if run_resp.success:
+        #         resp.result_status = resp.SUCCEEDED
+        #     else:
+        #         resp.result_status = resp.FAILED
+        #         return resp
+        if req.enable:
+            rospy.loginfo('Vaccum gripper grasping')
+        else:
+            rospy.loginfo('Vaccum gripper droping')    
+        resp.result_status = resp.SUCCEEDED
+        rospy.sleep(1.0)
+        return resp
 
     def _type_in_pose_handle(self, req):
         # used to transform typein information into blackboard
@@ -275,14 +284,23 @@ class DepalletizingHelper(object):
         All poses are relevant to the robot base frame
         """
         # decide whether to move forward the base before next pick
-        if req.pose.position.x <= 0.95:
+        MaxX = 0.95
+        OptimalX = 0.90
+        if req.pose.position.x <= MaxX:
             obj_pose = sd_pose(req.pose)
         else:
+            # this is for future moving base module
             if self.sim_move_base_client in self.enabled_clients:
-                move_forward = req.pose.position.x - 0.90
+                move_forward = req.pose.position.x - OptimalX
                 self.sim_move_base_client(move_forward)
-            req.pose.position.x -= move_forward
-            obj_pose = sd_pose(req.pose)
+                req.pose.position.x -= move_forward
+                obj_pose = sd_pose(req.pose)
+            else:
+                # we don have moving base now
+                resp = ExecutePlanningResponse()
+                rospy.logerr('Target box is too far to reach and I can only reach the MaxX at %f m and I can not move forward at present' % MaxX)
+                resp.result_status = resp.FAILED
+                return resp
 
         # plan pick
         pick_tcp_pose, pre_pick_tcp_pose, post_pick_tcp_pose, post_pick_tcp_pose_edge = self.planner.picking_plan(obj_pose)
@@ -319,26 +337,53 @@ class DepalletizingHelper(object):
         obj_pose.orientation.y = 0.5
         obj_pose.orientation.z = 0.5
         obj_pose.orientation.w = 0.5
-        # Important Note!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          ## x has to be nearly 0.9m
-          ## |y| has to be smaller than 0.95m, if y >= 0, is on left; if y<0, is on right.
-          ## z has to be within 0.49m to 2.424m        
-        if self.goalpointcnt < len(self.goalpoints):
-            obj_pose.position.x = self.goalpoints[self.goalpointcnt][0]
-            obj_pose.position.y = self.goalpoints[self.goalpointcnt][1]
-            obj_pose.position.z = self.goalpoints[self.goalpointcnt][2]
-            resp.result_status = resp.SUCCEEDED
-            resp.pose = obj_pose
-            self.goalpointcnt += 1
-            rospy.logwarn('We are going to execute number %d goal point!!!!!' % self.goalpointcnt)
-        else:
-            resp.result_status = resp.FAILED
-            rospy.logerr('All assigned goal points has been finished, I have to stop!!!!!!!!!')
-            return resp
+        
+        # demo with vision if the smarteye node is running
+        if self.get_pointcloud_client in self.enabled_clients:
+            pointcloud_req = GetPointCloudRequest()
+            pointcloud_resp = self.get_pointcloud_client(pointcloud_req)
+            if pointcloud_resp.result_status == pointcloud_resp.FAILED:
+                rospy.logerr('Get point cloud failed')
+                resp.result_status = resp.FAILED
+                return resp
+            else:
+                rospy.logwarn('Get point cloud successed')
+                ok, pose_detected_transformed = self.get_pose_from_pcl_img(pointcloud_resp.points,pointcloud_resp.image)
+                if ok:
+                    rospy.loginfo('Get pose successed')
+                    obj_pose.position.x = pose_detected_transformed.position.x
+                    obj_pose.position.y = pose_detected_transformed.position.y
+                    obj_pose.position.z = pose_detected_transformed.position.z
+                    resp.result_status = resp.SUCCEEDED
+                    resp.pose = obj_pose
+                else:
+                    rospy.logerr('Get pose failed')
+                    resp.result_status = resp.FAILED
+                    return resp
 
-        # decide whether to change aubo's pose to A, B, C, D districts
-        # move_aubo_req = ExecuteGroupNamedStatesRequest()
-        # move_aubo_req.group_name = 'aubo'
+        # demo with pre-defined position if the smarteye node is not running    
+        else:
+            rospy.logdebug('Get point cloud client is not enabled')
+            # Important Note!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+              ## x has to be nearly 0.9m
+              ## |y| has to be smaller than 0.95m, if y >= 0, is on left; if y<0, is on right.
+              ## z has to be within 0.49m to 2.424m        
+            if self.goalpointcnt < len(self.goalpoints):
+                obj_pose.position.x = self.goalpoints[self.goalpointcnt][0]
+                obj_pose.position.y = self.goalpoints[self.goalpointcnt][1]
+                obj_pose.position.z = self.goalpoints[self.goalpointcnt][2]
+                resp.result_status = resp.SUCCEEDED
+                resp.pose = obj_pose
+                self.goalpointcnt += 1
+                rospy.logwarn('We are going to execute number %d goal point!!!!!' % self.goalpointcnt)
+            else:
+                resp.result_status = resp.FAILED
+                rospy.logerr('All assigned goal points has been finished, I have to stop!!!!!!!!!')
+                return resp
+
+            # decide whether to change aubo's pose to A, B, C, D districts
+            # move_aubo_req = ExecuteGroupNamedStatesRequest()
+            # move_aubo_req.group_name = 'aubo'
 
         y_value = obj_pose.position.y
         z_value = obj_pose.position.z
@@ -390,6 +435,55 @@ class DepalletizingHelper(object):
         move_robot_req1.state_name = state_name
         move_robot_resp1 = self.move_robot_client(move_robot_req1)       
         rospy.logwarn('Robot has been successfully moved to Pose %s !!!!!. Then We Move Aubo!!!' % move_robot_req1.state_name)
+    
+    def ros_to_pcl(self, ros_cloud):
+        """ Converts a ROS PointCloud2 message to a pcl PointXYZRGB
+
+            Args:
+                ros_cloud (PointCloud2): ROS PointCloud2 message
+
+            Returns:
+                pcl.PointCloud_PointXYZRGB: PCL XYZRGB point cloud
+        """
+        points_list = []
+
+        for data in pc2.read_points(ros_cloud, skip_nans=True):
+            points_list.append([data[0], data[1], data[2], data[3]])
+
+        pcl_data = pcl.PointCloud_PointXYZRGB()
+        pcl_data.from_list(points_list)
+
+        return pcl_data
+
+    def hand_eye_transform(self,pose_detected_list):
+        # transformation matrix of target box wrt. camera frame
+        cTb = sd_pose(pose_detected_list)
+        # transformation matrix of camera frame wrt. robot frame
+        rTc = sd_pose(self.hand_eye_relationship_)
+        # transformation matrix of target box wrt. robot frame
+        rTb = np.dot(rTc,cTb)
+        pose_transformed_ros_pose = to_ros_pose(rTb)
+        return pose_transformed_ros_pose   
+
+    def get_pose_from_pcl_img(self, ros_pointcloud2, ros_image):
+        # convert ros to pcl
+        cloud = self.ros_to_pcl(ros_pointcloud2)
+        pts = cloud.to_array()
+        pts = pts[:, 0 : 3]
+        # convert ros to cv2
+        bridge = CvBridge()
+        cv_image = bridge.imgmsg_to_cv2(ros_image, desired_encoding='passthrough')
+        img = pcl2_img.rgb2gray(cv_image)
+        # detect pose of target box
+        success, result_tuple = stack_detection.detect_with_view(pts, img)
+        if (success):
+            result, grasp_box, cluster_planes, idx = result_tuple
+            R, t, pose_detected, rec_wid, rec_len = result
+            # hand-eye-transform the detected pose to robot coordinate
+            pose_detected_transformed = self.hand_eye_transform(pose_detected)
+        else:
+            pose_detected_transformed = Pose()
+        return success, pose_detected_transformed
 
     # def move_aubo_proccess(self, state_name):
     #     move_aubo_req1 = ExecuteGroupNamedStatesRequest()

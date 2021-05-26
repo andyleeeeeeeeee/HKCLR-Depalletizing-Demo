@@ -52,7 +52,6 @@ add_message_files(
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
-  GetPointCloud.srv
   GetGroupPose.srv
   GetGroupJointStates.srv
   ExecutePlanning.srv

@@ -1,0 +1,34 @@
+<launch>
+
+    <!-- Uncomment this if using wall time (should not be changed) -->
+    <!--<param name="/use_sim_time" value="true" />-->
+
+    <!-- Obtain this transform with hand-eye calibration (robot base frame named mz25_link0)(camera_frame named camera_link)-->
+
+    <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_camera"
+
+
+        args="1.11104 0.245844 2.36753  0.702478348163489 0.711554671125136 0.0113807945174403 0.00921398631201875 mz25_link0 camera_link" />
+
+    <arg name="ns" default="hv1000"/>
+    <!-- Note: do not add leading / to camera_link   -->
+    <arg name="camera_frame" default="camera_link"/>
+    <arg name="cloud_topic" default="/point_cloud"/>
+
+    <node ns="$(arg ns)" name="smarteye_node" pkg="smarteye" type="smarteye_node" respawn="false">
+        <param name="camera_frame" value="$(arg camera_frame)" />
+        <param name="pub_pointcloud_msg_id" value="$(arg cloud_topic)" />
+        <param name="get_pointcloud_srv_id" value="get_pointcloud" />
+
+        <param name="min_length" value="-600" />
+        <param name="max_length" value="900" />
+        <param name="min_width" value="-700" />
+        <param name="max_width" value="600" />
+        <param name="min_depth" value="1200" />
+        <param name="max_depth" value="1400" />
+
+        <param name="exp_time_2D" value="8000" />
+        <param name="exp_time_3D" value="10000" />
+    </node>
+
+</launch>

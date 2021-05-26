@@ -13,6 +13,7 @@ from std_srvs.srv import SetBool, Trigger
 from robot_webots.srv import *
 
 from roport.srv import *
+from smarteye.srv import *
 
 from rotools.utility.common import sd_pose, to_ros_pose, get_param, offset_ros_pose, set_param, all_close
 from rotools.utility import transform

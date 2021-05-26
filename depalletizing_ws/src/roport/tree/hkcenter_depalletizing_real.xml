@@ -25,18 +25,14 @@
                     <Action ID="ExecuteRemoveObject" is_exact="1" name="remove boxes_surface" obj_name="boxsur" service_name="robot/execute_remove_object"/>
                     <Action ID="ConnectWaypoints" connected_waypoints="{pick_motion}" name="pick motion" service_name="connect_waypoints" waypoint1="{pre_pick_pose}" waypoint2="{pick_pose}" waypoint3="" waypoint4="" waypoint5=""/>
                     <Action ID="ExecuteGroupManyPoses" constraint="" eef_step="0.1" goal_type="0" goals="{pick_motion}" group_name="arm" name="pre pick and pick" service_name="robot/execute_group_many_poses" tolerance="0"/>
-                    <Delay delay_msec="1000" name="Grasping">
-                        <AlwaysSuccess/>
-                    </Delay>
+                    <Action ID="ExecuteSuction" enable="1" name="Vaccum gripper grasping" service_name="execute_suction"/>
                     <Action ID="ConnectWaypoints" connected_waypoints="{pull_out}" name="pull out" service_name="connect_waypoints" waypoint1="{post_pick_pose}" waypoint2="{post_pick_pose_edge}" waypoint3="" waypoint4="" waypoint5=""/>
                     <Action ID="ExecuteGroupManyPoses" constraint="" eef_step="0.1" goal_type="0" goals="{pull_out}" group_name="arm" name="post pick" service_name="robot/execute_group_many_poses" tolerance="1"/>
                     <Action ID="ExecuteAddBox" auto_subfix="0" box_name="boxsur" box_pose="0.881 0 1.35 0 0 0 1" box_size="0.001 2.4 2.7" group_name="arm" is_absolute="1" name="box_surface" service_name="robot/execute_add_box"/>
-                    <Action ID="ExecuteAttachBox" box_name="picked_box" box_pose="0 0 0.18 0 0 0 1" box_size="0.4 0.4 0.36" eef_group_name="gripper" group_name="arm" name="AttachPickedBox" service_name="robot/execute_attach_box"/>                    
+                    <Action ID="ExecuteAttachBox" box_name="picked_box" box_pose="0 0 0.18 0 0 0 1" box_size="0.4 0.4 0.36" eef_group_name="gripper" group_name="arm" name="AttachPickedBox" service_name="robot/execute_attach_box"/>
                     <Action ID="ExecuteGroupLinearJointStates" goal="{post_middle_pose}" group_name="arm" name="post middle" service_name="robot/execute_group_joint_states" tolerance="1"/>
                     <Action ID="ExecuteGroupLinearJointStates" goal="{place_pose}" group_name="arm" name="place" service_name="robot/execute_group_joint_states" tolerance="1"/>
-                    <Delay delay_msec="1000" name="Droping">
-                        <AlwaysSuccess/>
-                    </Delay>
+                    <Action ID="ExecuteSuction" enable="0" name="Vaccum gripper droping" service_name="execute_suction"/>
                     <Action ID="ExecuteDetachObject" group_name="arm" name="DetachPickedBox" obj_name="picked_box" service_name="robot/execute_detach_object"/>
                     <Action ID="ExecuteRemoveObject" is_exact="1" name="RemovePickedBox" obj_name="picked_box" service_name="robot/execute_remove_object"/>
                     <Action ID="ExecuteGroupLinearJointStates" goal="{pre_middle_pose}" group_name="arm" name="back to pre middle" service_name="robot/execute_group_joint_states" tolerance="0"/>
