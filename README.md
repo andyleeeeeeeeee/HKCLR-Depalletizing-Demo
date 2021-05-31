@@ -3,6 +3,7 @@ Control algorithm of a self-developed depalletizing robot
 ## Note 
 If you have Docker engine, you can skip 'Pre-requisites' and 'Install'. you can start from 'Docker Image' to build the [Dockerfile](Dockerfile) as a Docker Image and run this repo in a Docker container. If you prefer to use this repo without Docker engine, you can ignore Dockerfile and you have to meet the Pre-requests as below: 
 ## Pre-requests
+### For using robot "Without" vision algorithm
  - Ubuntu 18.04
  - ROS Melodic
  - Webots 2020b-rev1 or newer version:  
@@ -22,21 +23,40 @@ If you have Docker engine, you can skip 'Pre-requisites' and 'Install'. you can 
     ros-melodic-ros-control \
     ros-melodic-ros-controllers \  
 ````
+### For using robot "With" vision algorithm
+ - All dependence mentioned above
+ - Python3 virtual environment and all python3 dependence for vision algorithm
+   Follow steps below:
+   1. install virtualenv
+   ````
+   pip install virtualenv
+   ````
+   2. setup python3.6 environment
+   ````
+   mkdir myvenv
+   cd myvenv
+   virtualenv -p /usr/bin/python3.6 env3.6
+   ````
+   3. active the python3.6 environment and install ros python3 dependence in this environment
+    ````
+   source ~/myvenv/env3.6/bin/activate
+   ````  
+   ````
+   pip3 install pyyaml rospkg
+   ````
+   4. keep installing other dependence of vision algorithm in this viltual python3 env by following the [README.md](depalletizing_ws/src/box_node/boxdemo/README.md)
+   
 ## Install
-1. Compile this under workspace `~/HKCLR-Depalletizing-Demo/depalletizing_ws`
+1. Compile this repo under workspace `~/HKCLR-Depalletizing-Demo/depalletizing_ws`
 ````
 catkin_make
 ````
-2. Add 'export' to .bashrc
+2. Source ros, LD_Lib and python path under workspace `~/HKCLR-Depalletizing-Demo/depalletizing_ws` when every new terminal is launched
 ````
-export PYTHONPATH=${PYTHONPATH}:~/HKCLR-Depalletizing-Demo/depalletizing_ws/src
-````
-3. Add 'source' to .bashrc
-````
-source ~/HKCLR-Depalletizing-Demo/depalletizing_ws/devel/setup.bash
+source setup.bash
 ````
 ## Docker Image
-The [Dockerfile](Dockerfile), which can be used to build a docker image consists of ubuntu18.04, nvidia/cudagl, webots, ros-melodic, moveit, and self-defined ROS packages. 
+The [Dockerfile](depalletizing_ws/Dockerfile), which can be used to build a docker image consists of ubuntu18.04, nvidia/cudagl, webots, ros-melodic, moveit, and self-defined ROS packages. 
 This is super useful and convenient. Any computer with recent Docker Engine and Nvidia GPU can easily use this repo without installing a ton of dependence. 
 Also, it can beyond the limitation of operating system, eg. you can even use this repo on Windows. 
 ### Creat Image
@@ -115,19 +135,53 @@ roslaunch roport hkcenter_depalletizing_simulation_aubo.launch use_sim_time:=tru
 ````
 
 ## Real Robot
-### Launch ros controller of SelfRobot and its hardware interface
+#### (Optional) Launch ros controller of SelfRobot and its hardware interface
 Note: If you have self-defined action server and joint states pulisher, you can not launch this!!!    
 This ia a fake controller to visualize the movement of robot under motion planning algorithm so we can debug easily.
 ````
 roslaunch robot_controller ArmController.launch
 ````
-### For SelfDeveloped robot, launch moveit move_group with ikfast kinematics plugin and move_group_interface server
+### If without vision
+#### 1. For SelfDeveloped robot, launch moveit move_group with ikfast kinematics plugin and move_group_interface server
 ````
 roslaunch robot_controller moveit_group_robot.launch use_sim_time:=false
 ````
 Now you can control real SelfRobot by MontionPlanning Plugin in Rviz
-### running motion planning pipeline
-You need to make sure that the x coordinate (wrt. base) of robot's gripper is less than 0.85m, so that it can initialize successfully and start working. The reason of this is to prevent gripper from collision with boxes in front when initialize. After then, type in following cmd to let the robot perform depalletize job:
+#### 2. Defined the goal points in [depalletizing_helper_for_real.py](depalletizing_ws/src/roport/scripts/depalletizing_helper_for_real.py)
+The robot has its workspace limitation, so make sure your self defined goal points are within conditions below:
+-  x has to be in 0.83 to 0.91m
+-  |y| has to be smaller than 0.95m, if y >= 0, is on left; if y<0, is on right.
+-  z has to be within 0.49m to 2.424m
+#### 3. running motion planning pipeline
+Before running following cmd, make sure that the x coordinate (wrt. base) of robot's gripper is less than 0.82, so that it can initialize successfully and start working. The reason of this is to prevent gripper from collision with boxes in front when initialize.
+````
+roslaunch roport hkcenter_depalletizing_real.launch use_sim_time:=false
+````
+### If with vision
+#### 1. For SelfDeveloped robot, launch moveit move_group with ikfast kinematics plugin and move_group_interface server
+````
+roslaunch robot_controller moveit_group_robot.launch use_sim_time:=false
+````
+#### 2. For smarteye camera, launch smarteye node to be used for geting pointcloud and 2D image
+````
+roslaunch smarteye smarteye.launch
+````
+#### 3. For BoxDemo Detection Algorithm, launch box node to process the incoming pointcloud and 2D image
+the BoxDemo Detection Algorithm currently has 2 modes, you can switch the mode in [run_box_node.py](depalletizing_ws/src/box_node/script/run_box_node.py):
+-  if self.is_pose_single_ = True, it will detect only one pose which is the closest one from camera
+-  if self.is_pose_single_ = False, it will detect poses as much as possible. Then the motion planning part will do filtering and choose to pick the optimal pose.  
+
+you can choose whether to display the detection result in [run_box_node.py](depalletizing_ws/src/box_node/script/run_box_node.py):
+-  if self.display_result_ = True, it will prompt the visualization window showing coordinates on point cloud
+-  if self.display_result_ = False, it will not prompt the visualization window 
+````
+rosrun box_node run_box_node.py
+````
+
+#### 4. For hand eye calibration, make sure you have figured out the self.hand_eye_relationship_ in [depalletizing_helper_for_real.py](depalletizing_ws/src/roport/scripts/depalletizing_helper_for_real.py)
+hand_eye_relationship x, y, z, ox, oy, oz, ow, need to be defined or get when run time
+#### 5. running motion planning pipeline
+Before running following cmd, make sure that the x coordinate (wrt. base) of robot's gripper is less than 0.82, so that it can initialize successfully and start working. The reason of this is to prevent gripper from collision with boxes in front when initialize.
 ````
 roslaunch roport hkcenter_depalletizing_real.launch use_sim_time:=false
 ````

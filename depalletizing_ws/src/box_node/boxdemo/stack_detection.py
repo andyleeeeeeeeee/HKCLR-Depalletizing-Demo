@@ -93,7 +93,7 @@ def detect_with_view_multi(pts):
     # 1. segment point cloud
     grasp_box = pts
     cluster_planes, cloud_ds = plane_extract(pts, params)
-    visualize_scene(cluster_planes)
+    # visualize_scene(cluster_planes)
 
     if(len(cluster_planes) == 0):
         print("No plane detected!")
@@ -119,7 +119,7 @@ def detect_with_view_single(pts, gray_img):
     cluster_planes, cloud_ds = plane_extract(pts, params)
     # print('time cost for segmentation: ', time.time() - time1)
     grasp_plane_ids = grasp_selection(cluster_planes, params)
-    visualize_scene(cluster_planes)
+    # visualize_scene(cluster_planes)
 
     if (len(cluster_planes) != 0):
         for i in range(len(grasp_plane_ids)):
