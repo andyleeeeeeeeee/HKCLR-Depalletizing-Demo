@@ -32,6 +32,16 @@ namespace smart_eye
     pointcloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>(pub_pointcloud_msg_id, 1);
     ROS_INFO_STREAM("Publish point cloud to " << pub_pointcloud_msg_id);
 
+    // Initialize image publisher
+    std::string pub_image_msg_id;
+    pnh_.getParam("pub_image_msg_id", pub_image_msg_id);
+    if (pub_image_msg_id.empty())
+    {
+      throw std::runtime_error("pub_image_msg_id is None");
+    }
+    image_pub_ = nh_.advertise<sensor_msgs::Image>(pub_image_msg_id, 1);
+    ROS_INFO_STREAM("Publish image to " << pub_image_msg_id);
+
     // Initialize camera frame
     pnh_.getParam("camera_frame", camera_frame_);
   }
@@ -113,20 +123,21 @@ namespace smart_eye
 //      ROS_WARN("Save ply file succeed!!!!!!!!!!!!!!!!!!!");
 
       // Respond and Publish point cloud
-      sensor_msgs::PointCloud2 msg;
-      pcl::toROSMsg(*pcl_cloud, msg);
-      msg.header.stamp = ros::Time::now();
-      msg.header.frame_id = camera_frame_;
-      res.points = msg;
+      sensor_msgs::PointCloud2 pcl_msg;
+      pcl::toROSMsg(*pcl_cloud, pcl_msg);
+      pcl_msg.header.stamp = ros::Time::now();
+      pcl_msg.header.frame_id = camera_frame_;
+      pointcloud_pub_.publish(pcl_msg);
+      // res.points = pcl_msg;
+
       // Respond and Publish 2d imge
       cv_bridge::CvImage img_bridge;
       sensor_msgs::Image img_msg;
-      img_bridge = cv_bridge::CvImage(msg.header, sensor_msgs::image_encodings::MONO8, resultImage);
+      img_bridge = cv_bridge::CvImage(pcl_msg.header, sensor_msgs::image_encodings::BGR8, resultImage);
       img_bridge.toImageMsg(img_msg);
-      res.image = img_msg;
-      // do respond and publish here
+      image_pub_.publish(img_msg);
+      // res.image = img_msg;
       res.result_status = res.SUCCEEDED;
-      pointcloud_pub_.publish(msg);
     }
     else
     {

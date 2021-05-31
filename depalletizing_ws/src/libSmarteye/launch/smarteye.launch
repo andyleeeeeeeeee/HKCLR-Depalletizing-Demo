@@ -13,12 +13,15 @@
     <arg name="ns" default="hv1000"/>
     <!-- Note: do not add leading / to camera_link   -->
     <arg name="camera_frame" default="camera_link"/>
-    <arg name="cloud_topic" default="/point_cloud"/>
+    <arg name="cloud_service" default="get_pointcloud"/>
+    <arg name="cloud_topic" default="point_cloud"/>
+    <arg name="image_topic" default="twod_image"/>
 
     <node ns="$(arg ns)" name="smarteye_node" pkg="smarteye" type="smarteye_node" respawn="false">
         <param name="camera_frame" value="$(arg camera_frame)" />
         <param name="pub_pointcloud_msg_id" value="$(arg cloud_topic)" />
-        <param name="get_pointcloud_srv_id" value="get_pointcloud" />
+        <param name="pub_image_msg_id" value="$(arg image_topic)" />
+        <param name="get_pointcloud_srv_id" value="$(arg cloud_service)" />
 
         <param name="min_length" value="-600" />
         <param name="max_length" value="900" />

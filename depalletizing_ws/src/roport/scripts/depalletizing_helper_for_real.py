@@ -18,13 +18,6 @@ from smarteye.srv import *
 from rotools.utility.common import sd_pose, to_ros_pose, get_param, offset_ros_pose, set_param, all_close
 from rotools.utility import transform
 
-# vision dependence
-from boxdemo import stack_detection
-import pcl
-from sensor_msgs import point_cloud2 as pc2
-from cv_bridge import CvBridge
-import pcl2_img
-
 # maybe in need in the future
 # class BoxPickingHelper(object):
 #     def __init__(self):
@@ -42,10 +35,12 @@ class NaiveDepalletizingPlanner(object):
         MaxZ = 2.424
         MinZ = 0.49
         if obj_pose[2, 3] > MaxZ:
-            rospy.logerr('Target box is too high to reach and I can only reach the MaxZ at %f m' % MaxZ)
+            rospy.logerr(
+                'Target box is too high to reach and I can only reach the MaxZ at %f m' % MaxZ)
             obj_pose[2, 3] = MaxZ
         if obj_pose[2, 3] < MinZ:
-            rospy.logerr('Target box is too low to reach and I can only reach the MinZ at %f m' % MinZ)
+            rospy.logerr(
+                'Target box is too low to reach and I can only reach the MinZ at %f m' % MinZ)
             obj_pose[2, 3] = MinZ
 
         # the box comes from whether the left or right side
@@ -54,20 +49,22 @@ class NaiveDepalletizingPlanner(object):
             self.pick_from_left = True
             # reach the limit in y-axis
             if obj_pose[1, 3] > MaxY:
-                rospy.logerr('Target box is too letf to reach and I can only reach the MaxY at %f m' % MaxY)
+                rospy.logerr(
+                    'Target box is too letf to reach and I can only reach the MaxY at %f m' % MaxY)
                 obj_pose[1, 3] = MaxY
             tcp_pose = obj_pose
         else:
             # reach the limit in y-axis
             if obj_pose[1, 3] < -MaxY:
-                rospy.logerr('Target box is too right to reach and I can only reach the MinY at -%f m' % MaxY)
+                rospy.logerr(
+                    'Target box is too right to reach and I can only reach the MinY at -%f m' % MaxY)
                 obj_pose[1, 3] = -MaxY
             # when on the right we need to rotate tcp wrt itself in z-axis for 180 degree
             tcp_pose = obj_pose
-            Rz180 = np.array([[-1,0,0],
-                              [0,-1,0],
-                              [0,0,1]])
-            tcp_pose[0:3,0:3] = np.dot(tcp_pose[0:3,0:3],Rz180)
+            Rz180 = np.array([[-1, 0, 0],
+                              [0, -1, 0],
+                              [0, 0, 1]])
+            tcp_pose[0:3, 0:3] = np.dot(tcp_pose[0:3, 0:3], Rz180)
             self.pick_from_left = False
 
         # pick
@@ -82,21 +79,25 @@ class NaiveDepalletizingPlanner(object):
         # can not be raised up any more cause it will collide with the roof
         if obj_pose[2, 3] >= MaxZ:
             post_pick_offset[2] = 0
-        elif obj_pose[2, 3] <MaxZ and obj_pose[2, 3]>= (MaxZ - post_pick_offset[2]):
+        elif obj_pose[2, 3] < MaxZ and obj_pose[2, 3] >= (MaxZ - post_pick_offset[2]):
             post_pick_offset[2] = MaxZ - obj_pose[2, 3]
 
         post_pick_edge_offset = [0, 0, 0]
+        # 0.38 is the mimimum x coordinate of tcp after the box pulled out, that is to say the max box thickness in x direction is 0.83-0.38 = 0.45m
+        post_pick_offset[0] = 0.40 - obj_pose[0, 3]
         post_pick_edge_offset[0] = post_pick_offset[0]
 
         BestY = 0.65
         # first pull out action "post_pick_tcp_pose"
         if abs(obj_pose[1, 3]) >= BestY:
             # raise and pull out
-            post_pick_tcp_pose = offset_ros_pose(pick_tcp_pose, post_pick_offset)
+            post_pick_tcp_pose = offset_ros_pose(
+                pick_tcp_pose, post_pick_offset)
         else:
             # only raise
             post_pick_offset[0] = 0
-            post_pick_tcp_pose = offset_ros_pose(pick_tcp_pose, post_pick_offset)
+            post_pick_tcp_pose = offset_ros_pose(
+                pick_tcp_pose, post_pick_offset)
 
         # second pull ou action "post_pick_edge_offset"
         # if box is far from origin in y direction, it has to come back a little in case of collision with side wall.
@@ -106,41 +107,47 @@ class NaiveDepalletizingPlanner(object):
             if self.pick_from_left:
                 post_pick_edge_offset[1] -= (abs(obj_pose[1, 3])-BestY)
             else:
-                post_pick_edge_offset[1] += (abs(obj_pose[1, 3])-BestY)       
+                post_pick_edge_offset[1] += (abs(obj_pose[1, 3])-BestY)
 
         # if box is close from origin in y direction, it has to come out a little because of workspace limitation.
         # if y < BestY, we still did not pull out the box, and we pull out here and add a small offset
         elif abs(obj_pose[1, 3]) < BestY:
-            post_pick_edge_offset[0] -= 0.03
+            post_pick_edge_offset[0] -= 0.02
             if self.pick_from_left:
                 post_pick_edge_offset[1] += (BestY-abs(obj_pose[1, 3]))
             else:
                 post_pick_edge_offset[1] -= (BestY-abs(obj_pose[1, 3]))
 
-        post_pick_tcp_pose_edge = offset_ros_pose(post_pick_tcp_pose, post_pick_edge_offset)
+        post_pick_tcp_pose_edge = offset_ros_pose(
+            post_pick_tcp_pose, post_pick_edge_offset)
         return pick_tcp_pose, pre_pick_tcp_pose, post_pick_tcp_pose, post_pick_tcp_pose_edge
 
     def middle_plan(self, obj_pose):
         # if pick from left side, we'd better to place the box from right side.
         if self.pick_from_left:
-            pre_middle_pose = get_param('pre_middle_left', [0.0829, -1.7568, 2.5506, 0.7786, -1.5734, -0.0038])
-            post_middle_pose = get_param('post_middle_left', [0.7015,0.4237,1.7017,-0.0747,-0.0040,-0.0806])
+            pre_middle_pose = get_param(
+                'pre_middle_left', [0.0829, -1.7568, 2.5506, 0.7786, -1.5734, -0.0038])
+            post_middle_pose = get_param(
+                'post_middle_left', [0.7015, 0.4237, 1.7017, -0.0747, -0.0040, -0.0806])
         # vise versa
         else:
-            pre_middle_pose = get_param('pre_middle_right', [0.0777, 1.8904, -2.4741, -0.9875, 1.5718, -0.0037])
-            post_middle_pose = get_param('post_middle_right', [0.7015,-0.4631,-1.6642, -1.0472, 0.0081, -0.0615])
+            pre_middle_pose = get_param(
+                'pre_middle_right', [0.0777, 1.8904, -2.4741, -0.9875, 1.5718, -0.0037])
+            post_middle_pose = get_param(
+                'post_middle_right', [0.7015, -0.4631, -1.6642, -1.0472, 0.0081, -0.0615])
         # if obj_pose[2, 3] >= 1.3:
         #     pre_middle_pose[0] += 0.8
         return pre_middle_pose, post_middle_pose
-                                    
 
     def placing_plan(self):
         # if pick from left side, we'd better to place the box from right side.
         if self.pick_from_left:
-            place_pose = get_param('place_left', [0.7005, 1.8997, 2.0341, 0.8173, 0.0009, -0.0041])
+            place_pose = get_param(
+                'place_left', [0.7005, 1.8997, 2.0341, 0.8173, 0.0009, -0.0041])
         # vise versa
         else:
-            place_pose = get_param('place_right', [0.7015, -1.8999, -2.0660, -0.7844, 0.0080, -0.0615])
+            place_pose = get_param(
+                'place_right', [0.7015, -1.8999, -2.0660, -0.7844, 0.0080, -0.0615])
         return place_pose
 
 
@@ -148,10 +155,11 @@ class DepalletizingHelper(object):
 
     def __init__(self, ):
         super(DepalletizingHelper, self).__init__()
-        
-        # hand_eye_relationship x, y, z, ox, oy, oz, ow, need to be defined or get when run time
-        self.hand_eye_relationship_ = [0,0,0,0,0,0,1]
 
+        # hand_eye_relationship x, y, z, ox, oy, oz, ow, need to be defined or get when run time
+        self.hand_eye_relationship_ = [0, 0, 0, 0, 0, 0, 1]
+        # transformation matrix of camera frame wrt. robot frame
+        self.rTc = sd_pose(self.hand_eye_relationship_)
         # planner for pick and place pose
         self.planner = NaiveDepalletizingPlanner()
 
@@ -163,34 +171,36 @@ class DepalletizingHelper(object):
 
         # Assign goal points here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # Important Note!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          ## x has to be nearly 0.9m
-          ## |y| has to be smaller than 0.95m, if y >= 0, is on left; if y<0, is on right.
-          ## z has to be within 0.49m to 2.424m
-          ## self.goalpoints = [[x1,y1,z1],[x2,y2,z2],...,...,[xn,yn,zn]]  
-        #self.goalpoints = [[0.9,0.6,0.7],[0.9,0.6,1.8],[0.9,-0.6,0.7],[0.9,-0.6,1.8],[0.9,0.6,0.7]]
-        self.goalpoints = [[0.9,0.2,0.7],[0.9,0.2,0.7],[0.9,0.2,0.7],[0.9,0.2,0.7],[0.9,0.2,0.7]]
+        # x has to be in 0.83 to 0.91m
+        # |y| has to be smaller than 0.95m, if y >= 0, is on left; if y<0, is on right.
+        # z has to be within 0.49m to 2.424m
+        ## self.goalpoints = [[x1,y1,z1],[x2,y2,z2],...,...,[xn,yn,zn]]
+        # self.goalpoints = [[0.83,0.95,0.7],[0.83,0.65,0.7],[0.83,0.35,0.7],[0.83,0.05,0.7],[0.91,0.95,0.7],[0.91,0.65,0.7],[0.91,0.35,0.7],[0.91,0.05,0.7]]
+        # self.goalpoints = [[0.91,0.95,2.4],[0.91,-0.95,2.4],[0.91,0.95,0.5],[0.91,-0.95,0.5]]
+        self.goalpoints = [[0.9, 0.2, 0.7], [0.9, 0.2, 0.7], [
+            0.9, 0.2, 0.7], [0.9, 0.2, 0.7], [0.9, 0.2, 0.7]]
         self.goalpointcnt = 0
-        # switch for Parallel Running
-        # self.store_DI_state = False
-        # self.fetch_DI_state = False
-        
+
         # enabled_clients
         self.enabled_clients = []
 
-
-        # Client for ask aubo to change photoing pose           
+        # Client for ask aubo to change photoing pose
         # self.move_aubo_client = self._create_client(
-        #     '/aubo/execute_group_named_states', ExecuteGroupNamedStates, False) 
-        # Client for ask robot to change pre middle pose 
+        #     '/aubo/execute_group_named_states', ExecuteGroupNamedStates, False)
+        # Client for ask robot to change pre middle pose
         self.move_robot_client = self._create_client(
-            '/robot/execute_group_named_states', ExecuteGroupNamedStates, False) 
+            '/robot/execute_group_named_states', ExecuteGroupNamedStates, False)
+
         # Clients for querying services provided by real devices
         self.get_pointcloud_client = self._create_client(
             '/hv1000/get_pointcloud', GetPointCloud, False)
-        # self.get_object_info_client = self._create_client(
-        #     '/vision/get_object_info', GetObjectPose, False)
+        self.get_object_pose_client = self._create_client(
+            '/box/get_object_pose', GetObjectPose, False)
+
         # self.run_gripper_client = self._create_client(
         #     '/gripper/run', SetBool, False)
+
+
         # self.get_tcp_pose_client = self._create_client(
         #     'aubo/get_group_pose', GetGroupPose, False)
 
@@ -208,14 +218,8 @@ class DepalletizingHelper(object):
             'execute_suction', ExecuteSuction, self._execute_suction_handle
         )
         self._sense_object_pose_srv = rospy.Service(
-            'sense_object_pose', SenseObjectPose, self.sense_object_pose_handle
+            'sense_object_pose', SenseObjectPose, self._sense_object_pose_handle
         )
-        # self._store_detected_info_srv = rospy.Service(
-        #     'store_detected_info', StoreDetectedInfo, self._store_detected_info_handle
-        # )
-        # self._fetch_detected_info_srv = rospy.Service(
-        #     'fetch_detected_info', FetchDetectedInfo, self._fetch_detected_info_handle
-        # )
 
     def _create_client(self, srv_id, srv_type, simulation=True, timeout=1):
         """Create service client for querying simulated or real devices
@@ -250,7 +254,7 @@ class DepalletizingHelper(object):
         if req.enable:
             rospy.loginfo('Vaccum gripper grasping')
         else:
-            rospy.loginfo('Vaccum gripper droping')    
+            rospy.loginfo('Vaccum gripper droping')
         resp.result_status = resp.SUCCEEDED
         rospy.sleep(1.0)
         return resp
@@ -284,8 +288,9 @@ class DepalletizingHelper(object):
         All poses are relevant to the robot base frame
         """
         # decide whether to move forward the base before next pick
-        MaxX = 0.95
-        OptimalX = 0.90
+        MaxX = 0.91
+        OptimalX = 0.87
+        MinX = 0.83
         if req.pose.position.x <= MaxX:
             obj_pose = sd_pose(req.pose)
         else:
@@ -298,16 +303,18 @@ class DepalletizingHelper(object):
             else:
                 # we don have moving base now
                 resp = ExecutePlanningResponse()
-                rospy.logerr('Target box is too far to reach and I can only reach the MaxX at %f m and I can not move forward at present' % MaxX)
+                rospy.logerr(
+                    'Target box is too far to reach and I can only reach the MaxX at %f m and I can not move forward at present' % MaxX)
                 resp.result_status = resp.FAILED
                 return resp
 
         # plan pick
-        pick_tcp_pose, pre_pick_tcp_pose, post_pick_tcp_pose, post_pick_tcp_pose_edge = self.planner.picking_plan(obj_pose)
+        pick_tcp_pose, pre_pick_tcp_pose, post_pick_tcp_pose, post_pick_tcp_pose_edge = self.planner.picking_plan(
+            obj_pose)
 
         # plan middle
         pre_middle_pose, post_middle_pose = self.planner.middle_plan(obj_pose)
-    
+
         # plan place
         place_pose = self.planner.placing_plan()
         resp = ExecutePlanningResponse()
@@ -323,21 +330,21 @@ class DepalletizingHelper(object):
         resp.place_pose = place_pose
         return resp
 
-    def sense_object_pose_handle(self, req):
+    def _sense_object_pose_handle(self, req):
         # 'Get pointcloud' and 'Get object pose' can be intergrated together. However, they are separeted in the code below.
         """Get the box pose in robot base frame.
 
         :param req: no need to give
-        """        
+        """
         resp = SenseObjectPoseResponse()
         obj_pose = Pose()
         # Important Note!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          ## do not motifiy the orientation.
+        # do not motifiy the orientation.
         obj_pose.orientation.x = 0.5
         obj_pose.orientation.y = 0.5
         obj_pose.orientation.z = 0.5
         obj_pose.orientation.w = 0.5
-        
+
         # demo with vision if the smarteye node is running
         if self.get_pointcloud_client in self.enabled_clients:
             pointcloud_req = GetPointCloudRequest()
@@ -348,26 +355,61 @@ class DepalletizingHelper(object):
                 return resp
             else:
                 rospy.logwarn('Get point cloud successed')
-                ok, pose_detected_transformed = self.get_pose_from_pcl_img(pointcloud_resp.points,pointcloud_resp.image)
-                if ok:
-                    rospy.loginfo('Get pose successed')
-                    obj_pose.position.x = pose_detected_transformed.position.x
-                    obj_pose.position.y = pose_detected_transformed.position.y
-                    obj_pose.position.z = pose_detected_transformed.position.z
-                    resp.result_status = resp.SUCCEEDED
-                    resp.pose = obj_pose
+                if self.get_object_pose_client in self.enabled_clients:
+                    get_object_pose_req = GetObjectPoseRequest()
+                    get_object_pose_resp = self.get_object_pose_client(get_object_pose_req)                
+                    if get_object_pose_resp.result_status == get_object_pose_resp.FAILED:
+                        rospy.logerr('Get pose failed')
+                        resp.result_status = resp.FAILED
+                        return resp
+                    else:
+                        if get_object_pose_resp.pose_amount == get_object_pose_resp.SINGLE:
+                            rospy.logwarn('Get single pose successed')
+                            # do hand eye transform
+                            pose_detected_transformed_matrix = self.hand_eye_transform(get_object_pose_resp.pose)
+                            pose_detected_transformed = to_ros_pose(pose_detected_transformed_matrix)
+                            obj_pose.position.x = pose_detected_transformed.position.x
+                            obj_pose.position.y = pose_detected_transformed.position.y
+                            obj_pose.position.z = pose_detected_transformed.position.z
+                            resp.result_status = resp.SUCCEEDED
+                            resp.pose = obj_pose
+                        else:
+                            rospy.logwarn('Get multi poses successed')
+                            poses_1d_array = np.array(get_object_pose_resp.poses_list) 
+                            poses_2d_array = np.reshape(poses_1d_array,(-1,7))  
+                            # do hand eye transform and choose the optimal one from all to grasp
+                            pose_detected_transformed_matrix_optimal = np.zeros((4,4))
+                            for cnt in range(np.size(poses_2d_array,0)):
+                                # transform pose from camera to robot coordinate one by one
+                                pose_detected_transformed_matrix = self.hand_eye_transform(poses_2d_array[cnt])
+                                # Three conditions to decide whether it is the optimal one:
+                                # 1. whether the Z axis of the pose is parallel with the X axis of the robot. here arccos(0.906) is 25degree
+                                if np.dot(np.array([1, 0, 0]),pose_detected_transformed_matrix[0:3,2]) > 0.906:
+                                    # 2. whether the x coordinate is in the workable space of the robot. here the workable is 0.83 to 0.91m
+                                    if pose_detected_transformed_matrix[0,3] > 0.83 and pose_detected_transformed_matrix[0,3] < 0.91:
+                                        # 3. whether the z coordinate is the biggest, namely highest one will be choosed.
+                                        if pose_detected_transformed_matrix[2,3] > pose_detected_transformed_matrix_optimal[2,3]:
+                                            pose_detected_transformed_matrix_optimal = pose_detected_transformed_matrix
+                            # transfer the optimal one from matrix to ros pose
+                            pose_detected_transformed = to_ros_pose(pose_detected_transformed_matrix_optimal)
+                            rospy.logwarn('Get the optimal one from multi poses')
+                            obj_pose.position.x = pose_detected_transformed.position.x
+                            obj_pose.position.y = pose_detected_transformed.position.y
+                            obj_pose.position.z = pose_detected_transformed.position.z
+                            resp.result_status = resp.SUCCEEDED
+                            resp.pose = obj_pose
                 else:
-                    rospy.logerr('Get pose failed')
+                    rospy.logerr('Get object pose client is not enabled, please make sure the box node is running')
                     resp.result_status = resp.FAILED
                     return resp
 
-        # demo with pre-defined position if the smarteye node is not running    
+        # demo with pre-defined position if the smarteye node is not running
         else:
-            rospy.logdebug('Get point cloud client is not enabled')
+            rospy.logwarn('Get point cloud client is not enabled, if you want to use vision, please make sure smart eye node is running')
             # Important Note!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-              ## x has to be nearly 0.9m
-              ## |y| has to be smaller than 0.95m, if y >= 0, is on left; if y<0, is on right.
-              ## z has to be within 0.49m to 2.424m        
+            # x has to be nearly 0.9m
+            # |y| has to be smaller than 0.95m, if y >= 0, is on left; if y<0, is on right.
+            # z has to be within 0.49m to 2.424m
             if self.goalpointcnt < len(self.goalpoints):
                 obj_pose.position.x = self.goalpoints[self.goalpointcnt][0]
                 obj_pose.position.y = self.goalpoints[self.goalpointcnt][1]
@@ -375,10 +417,12 @@ class DepalletizingHelper(object):
                 resp.result_status = resp.SUCCEEDED
                 resp.pose = obj_pose
                 self.goalpointcnt += 1
-                rospy.logwarn('We are going to execute number %d goal point!!!!!' % self.goalpointcnt)
+                rospy.logwarn(
+                    'We are going to execute number %d goal point!!!!!' % self.goalpointcnt)
             else:
                 resp.result_status = resp.FAILED
-                rospy.logerr('All assigned goal points has been finished, I have to stop!!!!!!!!!')
+                rospy.logerr(
+                    'All assigned goal points has been finished, I have to stop!!!!!!!!!')
                 return resp
 
             # decide whether to change aubo's pose to A, B, C, D districts
@@ -396,10 +440,11 @@ class DepalletizingHelper(object):
         elif y_value >= 0 and z_value < 1.35:
             move_aubo_req.state_name = 'C'
         elif y_value < 0 and z_value < 1.35:
-                move_aubo_req.state_name = 'D' 
-                
+            move_aubo_req.state_name = 'D'
+
         if self.aubo_pose == move_aubo_req.state_name:
-            rospy.logwarn('No need to change Aubo pose, which is in Pose %s !!!!!' % self.aubo_pose)
+            rospy.logwarn(
+                'No need to change Aubo pose, which is in Pose %s !!!!!' % self.aubo_pose)
         else:
             self.aubo_pose = move_aubo_req.state_name
             if self.move_robot_client in self.enabled_clients:
@@ -411,7 +456,8 @@ class DepalletizingHelper(object):
                     move_robot_req.state_name = 'right_pre'
             # move robot
             rospy.logwarn('Need to change Robot pre midlle pose.')
-            thread1 = threading.Thread(target=self.move_robot_proccess, args=(move_robot_req.state_name,))
+            thread1 = threading.Thread(
+                target=self.move_robot_proccess, args=(move_robot_req.state_name,))
             thread1.start()
             # move aubo
             rospy.logwarn('Need to change Aubo photoing pose.')
@@ -421,7 +467,7 @@ class DepalletizingHelper(object):
             # thread2.join()
             thread1.join()
             # capture point cloud one more time after changing pose
-            # rospy.logwarn('Recapturing photo after changing pose.')                
+            # rospy.logwarn('Recapturing photo after changing pose.')
             # obj_re_pose = Pose()
             # get_pose_resp = self.sim_get_pose_client(0)
             # obj_re_pose = get_pose_resp.pose
@@ -433,118 +479,24 @@ class DepalletizingHelper(object):
         move_robot_req1 = ExecuteGroupNamedStatesRequest()
         move_robot_req1.group_name = 'arm'
         move_robot_req1.state_name = state_name
-        move_robot_resp1 = self.move_robot_client(move_robot_req1)       
-        rospy.logwarn('Robot has been successfully moved to Pose %s !!!!!. Then We Move Aubo!!!' % move_robot_req1.state_name)
-    
-    def ros_to_pcl(self, ros_cloud):
-        """ Converts a ROS PointCloud2 message to a pcl PointXYZRGB
+        move_robot_resp1 = self.move_robot_client(move_robot_req1)
+        rospy.logwarn('Robot has been successfully moved to Pose %s !!!!!. Then We Move Aubo!!!' %
+                      move_robot_req1.state_name)
 
-            Args:
-                ros_cloud (PointCloud2): ROS PointCloud2 message
 
-            Returns:
-                pcl.PointCloud_PointXYZRGB: PCL XYZRGB point cloud
-        """
-        points_list = []
-
-        for data in pc2.read_points(ros_cloud, skip_nans=True):
-            points_list.append([data[0], data[1], data[2], data[3]])
-
-        pcl_data = pcl.PointCloud_PointXYZRGB()
-        pcl_data.from_list(points_list)
-
-        return pcl_data
-
-    def hand_eye_transform(self,pose_detected_list):
+    def hand_eye_transform(self, pose_detected):
         # transformation matrix of target box wrt. camera frame
-        cTb = sd_pose(pose_detected_list)
-        # transformation matrix of camera frame wrt. robot frame
-        rTc = sd_pose(self.hand_eye_relationship_)
+        cTb = sd_pose(pose_detected)
         # transformation matrix of target box wrt. robot frame
-        rTb = np.dot(rTc,cTb)
-        pose_transformed_ros_pose = to_ros_pose(rTb)
-        return pose_transformed_ros_pose   
-
-    def get_pose_from_pcl_img(self, ros_pointcloud2, ros_image):
-        # convert ros to pcl
-        cloud = self.ros_to_pcl(ros_pointcloud2)
-        pts = cloud.to_array()
-        pts = pts[:, 0 : 3]
-        # convert ros to cv2
-        bridge = CvBridge()
-        cv_image = bridge.imgmsg_to_cv2(ros_image, desired_encoding='passthrough')
-        img = pcl2_img.rgb2gray(cv_image)
-        # detect pose of target box
-        success, result_tuple = stack_detection.detect_with_view(pts, img)
-        if (success):
-            result, grasp_box, cluster_planes, idx = result_tuple
-            R, t, pose_detected, rec_wid, rec_len = result
-            # hand-eye-transform the detected pose to robot coordinate
-            pose_detected_transformed = self.hand_eye_transform(pose_detected)
-        else:
-            pose_detected_transformed = Pose()
-        return success, pose_detected_transformed
+        rTb = np.dot(self.rTc, cTb)
+        return rTb
 
     # def move_aubo_proccess(self, state_name):
     #     move_aubo_req1 = ExecuteGroupNamedStatesRequest()
     #     move_aubo_req1.group_name = 'aubo'
     #     move_aubo_req1.state_name = state_name
-    #     move_aubo_resp1 = self.move_aubo_client(move_aubo_req1)       
+    #     move_aubo_resp1 = self.move_aubo_client(move_aubo_req1)
     #     rospy.logwarn('Aubo has been successfully moved to Pose %s !!!!!. Recapture pointcloud once again!!!' % move_aubo_req1.state_name)
-
-    # def _store_detected_info_handle(self, req):
-    #     # store the newest dection info into ros server
-    #     position = [req.pose.position.x,
-    #                 req.pose.position.y, req.pose.position.z]
-    #     set_param('detected_obj_pose_position', position)
-    #     orientation = [req.pose.orientation.x, req.pose.orientation.y,
-    #                    req.pose.orientation.z, req.pose.orientation.w]
-    #     set_param('detected_obj_pose_orientation', orientation)
-    #     rospy.sleep(0.1)
-    #     self.store_DI_state = True
-
-    #     # wait for robot to fetch this newest detection info
-    #     while not rospy.is_shutdown() and not self.fetch_DI_state:
-    #         rospy.sleep(0.1)
-    #     self.fetch_DI_state = False
-
-    #     # wait for the box, which is detected just ago, to be picked away and then start a new detection
-    #     resp = StoreDetectedInfoResponse()
-    #     if self.get_tcp_pose_client in self.enabled_clients:
-    #         can_trigger = False
-    #         while not rospy.is_shutdown() and not can_trigger:
-    #             can_trigger_resp = self.get_tcp_pose_client()
-    #             rospy.sleep(0.1)
-    #             if self.planner.pick_from_left:
-    #                 if all_close(self.planner.right_middle_pose.position, can_trigger_resp.pose.position, 0.05):
-    #                     can_trigger = True
-    #             else:
-    #                 if all_close(self.planner.left_middle_pose.position, can_trigger_resp.pose.position, 0.05):
-    #                     can_trigger = True
-    #         resp.result_status = resp.SUCCEEDED
-    #         return resp
-
-    # def _fetch_detected_info_handle(self, req):
-    #     resp = FetchDetectedInfoResponse()
-    #     # wait for the newest detected info to be sent in ros server.
-    #     while not rospy.is_shutdown() and not self.store_DI_state:
-    #         rospy.sleep(0.1)
-
-    #     # robot gets the newest detection info for motion planning
-    #     position = get_param('detected_obj_pose_position')
-    #     resp.pose.position.x = position[0]
-    #     resp.pose.position.y = position[1]
-    #     resp.pose.position.z = position[2]
-    #     orientation = get_param('detected_obj_pose_orientation')
-    #     resp.pose.orientation.x = orientation[0]
-    #     resp.pose.orientation.y = orientation[1]
-    #     resp.pose.orientation.z = orientation[2]
-    #     resp.pose.orientation.w = orientation[3]
-    #     print('pose fetched is {}', format(resp.pose))
-    #     self.store_DI_state = False
-    #     self.fetch_DI_state = True
-    #     resp.result_status = resp.SUCCEEDED
-    #     return resp
 
 
 if __name__ == "__main__":

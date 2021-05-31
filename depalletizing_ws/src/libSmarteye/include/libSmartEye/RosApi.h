@@ -46,6 +46,7 @@ namespace smart_eye {
 
     std::string camera_frame_;
     ros::Publisher pointcloud_pub_;
+    ros::Publisher image_pub_;
     ros::ServiceServer get_pointcloud_srv_;
 
     bool getPointCloudSrvCb(smarteye::GetPointCloud::Request& req,

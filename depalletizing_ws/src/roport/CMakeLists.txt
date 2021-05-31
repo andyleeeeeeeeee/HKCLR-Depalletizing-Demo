@@ -72,6 +72,7 @@ add_service_files(
   SenseObjectPose.srv
   FetchDetectedInfo.srv
   StoreDetectedInfo.srv
+  GetObjectPose.srv
 )
 
 ## Generate actions in the 'action' folder
