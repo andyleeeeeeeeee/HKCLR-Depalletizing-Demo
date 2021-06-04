@@ -26,7 +26,7 @@ class BoxVisionTester(object):
             '/hv1000/point_cloud', PointCloud2, queue_size=1)
 
         self._send_img_pub = rospy.Publisher(
-            '/hv1000/2d_image', Image, queue_size=1)
+            '/hv1000/twod_image', Image, queue_size=1)
 
         self.get_object_pose_client = self._create_client(
             '/box/get_object_pose', GetObjectPose, False)

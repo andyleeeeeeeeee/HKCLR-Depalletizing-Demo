@@ -60,7 +60,7 @@ class BoxVisionHelper(object):
         if self.is_pose_single_:
             # if only need one pose as result, make sure the update processes of pcl and image are completed
             rospy.loginfo('Check whether the Point CLoud and Image have been updated')
-            while not self.is_pcl_updated_ or not self.is_pcl_updated_:
+            while not self.is_pcl_updated_ or not self.is_img_updated_:
                 rospy.sleep(0.1)
             rospy.loginfo('Confirm that the Point CLoud and Image have been updated')
             # detect pose of target box
