@@ -3,6 +3,7 @@ import rospy
 from std_msgs.msg import Header
 from std_msgs.msg import String
 from sensor_msgs.msg import JointState
+from std_srvs.srv import SetBool
 
 import re, json, sys, time, numpy
 sys.path.append("..")
@@ -41,9 +42,29 @@ class curi_ros_driver(robot):
         self.JointLasPos = [0.0] * self.JointSize
         self.JointLasVel = [0.0] * self.JointSize
 
+        self.is_braked_ = False
         self.pub = rospy.Publisher('robot/joint_states', JointState, queue_size=5)
         self.sub = rospy.Subscriber('CURIScript', String, self.recieve_script)
+        self.gripper_srv_ = rospy.Service('/gripper/run', SetBool, self._gripper_handle)
 
+    def _gripper_handle(self,req):
+        resp = SetBoolResponse()
+        if req.data:
+            gripper_.lock()
+            brake.lock()
+            self.is_braked_ = True
+            resp.success = True
+            resp.message = 'openGripper'
+            rospy.logwarn('openVaccumGripper Grasp')
+        else:
+            gripper_.unlock()
+            brake.lock()
+            self.is_braked_ = False
+            resp.success = True
+            resp.message = 'closeGripper'
+            rospy.logwarn('closeVaccumGripper Drop')
+        return resp
+    
     def recieve_script(self, curi_script1):
         curi_script = curi_script1
         cmd = curi_script.data.split('(')

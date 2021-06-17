@@ -197,8 +197,8 @@ class DepalletizingHelper(object):
         self.get_object_pose_client = self._create_client(
             '/box/get_object_pose', GetObjectPose, False)
 
-        # self.run_gripper_client = self._create_client(
-        #     '/gripper/run', SetBool, False)
+        self.run_gripper_client = self._create_client(
+            '/gripper/run', SetBool, False)
 
 
         # self.get_tcp_pose_client = self._create_client(
@@ -244,20 +244,26 @@ class DepalletizingHelper(object):
 
     def _execute_suction_handle(self, req):
         resp = ExecuteSuctionResponse()
-        # if self.run_gripper_client in self.enabled_clients:
-        #     run_resp = self.run_gripper_client(req.enable)
-        #     if run_resp.success:
-        #         resp.result_status = resp.SUCCEEDED
-        #     else:
-        #         resp.result_status = resp.FAILED
-        #         return resp
-        if req.enable:
-            rospy.loginfo('Vaccum gripper grasping')
+        if self.run_gripper_client in self.enabled_clients:
+            run_resp = self.run_gripper_client(req.enable)
+            if req.enable:
+                rospy.loginfo('Vaccum gripper grasping')
+            else:
+                rospy.loginfo('Vaccum gripper droping')
+            if run_resp.success:
+                resp.result_status = resp.SUCCEEDED
+            else:
+                resp.result_status = resp.FAILED
+            rospy.sleep(0.5)
+            return resp
         else:
-            rospy.loginfo('Vaccum gripper droping')
-        resp.result_status = resp.SUCCEEDED
-        rospy.sleep(1.0)
-        return resp
+            if req.enable:
+                rospy.loginfo('Vaccum gripper grasping')
+            else:
+                rospy.loginfo('Vaccum gripper droping')
+            resp.result_status = resp.SUCCEEDED
+            rospy.sleep(1.0)
+            return resp
 
     def _type_in_pose_handle(self, req):
         # used to transform typein information into blackboard
