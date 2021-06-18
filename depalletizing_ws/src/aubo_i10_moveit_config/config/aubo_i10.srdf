@@ -22,36 +22,37 @@
         <joint name="wrist3_joint" value="0" />
     </group_state>
     <group_state name="A" group="aubo">
-        <joint name="shoulder_joint" value="-1.7780" />
-        <joint name="upperArm_joint" value="-1.1770" />
-        <joint name="foreArm_joint" value="-0.1414" />
-        <joint name="wrist1_joint" value="1.0513" />
-        <joint name="wrist2_joint" value="-1.3103" />
-        <joint name="wrist3_joint" value="0.0027" />
+        <joint name="shoulder_joint" value="-1.837089235928" />
+        <joint name="upperArm_joint" value="-1.081351576031" />
+        <joint name="foreArm_joint" value=" -0.193915911646" />
+        <joint name="wrist1_joint" value="  0.9897323561359" />
+        <joint name="wrist2_joint" value="  -1.264923324035" />
+        <joint name="wrist3_joint" value="  -0.025490883644" />
     </group_state>
+              
     <group_state name="B" group="aubo">
-        <joint name="shoulder_joint" value="1.7741" />
-        <joint name="upperArm_joint" value="1.1745" />
-        <joint name="foreArm_joint" value="0.1410" />
-        <joint name="wrist1_joint" value="-1.0489" />
-        <joint name="wrist2_joint" value="1.3075" />
-        <joint name="wrist3_joint" value="-0.0026" />
+        <joint name="shoulder_joint" value="1.837089235928" />
+        <joint name="upperArm_joint" value="1.081351576031" />
+        <joint name="foreArm_joint" value=" 0.193915911646" />
+        <joint name="wrist1_joint" value="  -0.9897323561359" />
+        <joint name="wrist2_joint" value="  1.264923324035 " />
+        <joint name="wrist3_joint" value="  0.025490883644" />
     </group_state>
     <group_state name="C" group="aubo">
-        <joint name="shoulder_joint" value="-2.0326" />
-        <joint name="upperArm_joint" value="-0.9341" />
-        <joint name="foreArm_joint" value="-0.3471" />
-        <joint name="wrist1_joint" value="1.0890" />
-        <joint name="wrist2_joint" value="-1.1385" />
-        <joint name="wrist3_joint" value="-0.2147" />
+        <joint name="shoulder_joint" value="-2.009193529586178 " />
+        <joint name="upperArm_joint" value="-0.9671963754984021" />
+        <joint name="foreArm_joint" value=" -0.4327598417576234" />
+        <joint name="wrist1_joint" value="  1.0310432074927613 " />
+        <joint name="wrist2_joint" value="  -1.1704729937196707" />
+        <joint name="wrist3_joint" value="  -0.1600042045171014" />
     </group_state>
     <group_state name="D" group="aubo">
-        <joint name="shoulder_joint" value="2.0232" />
-        <joint name="upperArm_joint" value="0.9430" />
-        <joint name="foreArm_joint" value="0.3726" />
-        <joint name="wrist1_joint" value="-1.0701" />
-        <joint name="wrist2_joint" value="1.1426" />
-        <joint name="wrist3_joint" value="0.2109" />
+        <joint name="shoulder_joint" value="2.009151760266885" />
+        <joint name="upperArm_joint" value="0.967518898694357" />
+        <joint name="foreArm_joint" value=" 0.432553449222969" />
+        <joint name="wrist1_joint" value=" -1.05092429862862 " />
+        <joint name="wrist2_joint" value="  1.170405773906470" />
+        <joint name="wrist3_joint" value="  0.128538472982074" />
     </group_state>
     <!--VIRTUAL JOINT: Purpose: this element defines a virtual joint between a robot link and an external frame of reference (considered fixed with respect to the robot)-->
     <virtual_joint name="FixeBase" type="fixed" parent_frame="world" child_link="pedestal_link" />
