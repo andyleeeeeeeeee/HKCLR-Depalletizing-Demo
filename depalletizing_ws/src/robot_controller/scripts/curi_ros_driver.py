@@ -3,13 +3,29 @@ import rospy
 from std_msgs.msg import Header
 from std_msgs.msg import String
 from sensor_msgs.msg import JointState
-from std_srvs.srv import SetBool
+from std_srvs.srv import SetBool, SetBoolResponse
+import serial
+import struct
+# import thread
+
 
 import re, json, sys, time, numpy
 sys.path.append("..")
 from communication.curi_communication_socket import curi_communication_socket
 from base.curi_robot_control import curi_robot_control, robot, ROBOT_STATE, CONTROL_SPACE, CONTROL_MODE
 from communication.curi_ros_trajectory_action import curi_ros_trajectory_action
+
+
+s_open = [0x01, 0x05, 0x00, 0x00, 0xFF, 0x00, 0x8C, 0x3A]
+s_close = [0x01, 0x05, 0x00, 0x00, 0x00, 0x00, 0xCD, 0xCA]
+
+ser = serial.Serial(
+        port='/dev/ttyUSB0',
+        baudrate=9600,
+        parity=serial.PARITY_NONE,
+        stopbits=serial.STOPBITS_ONE,
+        bytesize=serial.EIGHTBITS
+        )
 
 class curi_ros_driver(robot):
     def __init__(self, config_file = 'defualt.json'):
@@ -46,25 +62,39 @@ class curi_ros_driver(robot):
         self.pub = rospy.Publisher('robot/joint_states', JointState, queue_size=5)
         self.sub = rospy.Subscriber('CURIScript', String, self.recieve_script)
         self.gripper_srv_ = rospy.Service('/gripper/run', SetBool, self._gripper_handle)
+    #     thread.start_new_thread(command_thread,())
+
+
+    # def command_thread(self):
+    #     self.gripper_srv_ = rospy.Service('/gripper/run', SetBool, self._gripper_handle)
+    #     rospy.spin()
 
     def _gripper_handle(self,req):
         resp = SetBoolResponse()
         if req.data:
-            gripper_.lock()
-            brake.lock()
+            # activate vacuum gripper
+            data = struct.pack("%dB"%(len(s_open)),*s_open)
+            ser.write(data) 
+            #gripper_.lock()
+            # activate brake
+            #brake.lock()
             self.is_braked_ = True
             resp.success = True
             resp.message = 'openGripper'
             rospy.logwarn('openVaccumGripper Grasp')
         else:
-            gripper_.unlock()
-            brake.lock()
+            # unactivate vacuum gripper
+            data = struct.pack("%dB"%(len(s_close)),*s_close)
+            ser.write(data) 
+            #gripper_.unlock()
+            # unactivate brake
+            #brake.lock()
             self.is_braked_ = False
             resp.success = True
             resp.message = 'closeGripper'
-            rospy.logwarn('closeVaccumGripper Drop')
+            rospy.logwarn('closeVaccumGripper Drop')           
         return resp
-    
+
     def recieve_script(self, curi_script1):
         curi_script = curi_script1
         cmd = curi_script.data.split('(')
@@ -91,78 +121,82 @@ class curi_ros_driver(robot):
         self.socket_communication.send(message)
 
     def run(self):
-        self.socket_communication.open()
-        self.action_server = None
-        t = 0
-        flag = 0
-        flag_1 = 0
-        a = numpy.array([[1.0,1.0,1.0,1.0,1.0]])
-        time_now = 0.0
-        time_las = time_now
-        time_dt = 0.0
-        while not rospy.is_shutdown():
-            # get robot state
-            data = self.socket_communication.recieve(flag=1)
-            if data:
-                self.unpackRobotState(data.strip("b'"))
-                self.joint_states.header.stamp = rospy.Time.now()
-                self.joint_states.position = self.JointCurPos[:]
-                self.joint_states.velocity = self.JointCurVel[:]
-                self.joint_states.effort = self.JointCurTor[:]
-                self.ConnectRobot = True 
-            
-            if self.ConnectRobot:
-                if not self.action_server:
-                    self.Command = ROBOT_STATE.RUNNING_STATE_ONLINE
-                    message = self.packRobotCommand()
-                    self.socket_communication.send(message)
-                    self.action_server = curi_ros_trajectory_action(self.JointSize, self.joint_states.name, self.dt)
-                    self.action_server.ConnectRobot = self.ConnectRobot
-                    self.action_server.start()
-                    self.JointLasPos = self.JointCurPos.copy()
-                    self.JointCmdPos = self.JointCurPos.copy()
-                else:
-                    self.Command = ROBOT_STATE.RUNNING_STATE_ONLINE
-                    self.JointCmdPos = self.action_server.JointCmdPos.copy()
-                    self.action_server.JointCurPos = self.JointCurPos
-                    self.action_server.JointCurVel = self.JointCurVel
-                    time_now = self.action_server.tx
-                    time_dt = time_now - time_las
-                    if time_dt == 0:
-                        flag_1 +=1
-                        if flag_1 >1:
-                            self.JointCmdVel = (self.JointCmdPos - self.JointLasPos) / self.dt + 0.01 * (self.JointCmdPos - self.JointCurPos) / self.dt
-                        else:
-                            self.JointCmdVel = self.JointLasVel
-                    elif time_dt > 0.07:
-                        self.JointCmdVel = self.JointLasVel
+            self.socket_communication.open()
+            self.action_server = None
+            t = 0
+            flag = 0
+            flag_1 = 0
+            a = numpy.array([[1.0,1.0,1.0,1.0,1.0]])
+            time_now = 0.0
+            time_las = time_now
+            time_dt = 0.0
+            while not rospy.is_shutdown():
+                # get robot state
+                data = self.socket_communication.recieve(flag=1)
+                if data:
+                    self.unpackRobotState(data.strip("b'"))
+                    self.joint_states.header.stamp = rospy.Time.now()
+                    self.joint_states.position = self.JointCurPos[:]
+                    self.joint_states.velocity = self.JointCurVel[:]
+                    self.joint_states.effort = self.JointCurTor[:]
+                    self.ConnectRobot = True 
+                
+                if self.ConnectRobot:
+                    if not self.action_server:
+                        self.Command = ROBOT_STATE.RUNNING_STATE_ONLINE
+                        message = self.packRobotCommand()
+                        self.socket_communication.send(message)
+                        self.action_server = curi_ros_trajectory_action(self.JointSize, self.joint_states.name, self.dt)
+                        self.action_server.ConnectRobot = self.ConnectRobot
+                        self.action_server.start()
+                        self.JointLasPos = self.JointCurPos.copy()
+                        self.JointCmdPos = self.JointCurPos.copy()
                     else:
-                        flag_1 = 0
-                        self.JointCmdVel = (self.JointCmdPos - self.JointLasPos) / self.dt + 0.01 * (self.JointCmdPos - self.JointCurPos) / self.dt
-                    #self.JointCmdVel = (self.JointCmdPos - self.JointLasPos) / time_dt    #+ 0.01 * (self.JointCmdPos - self.JointCurPos) / self.dt
-                    
-                    #print(type(b))
-                    a = numpy.append(a,[[flag, self.JointCmdPos[0], self.JointLasPos[0], self.JointCmdVel[0], time_now]], axis=0)
-                    flag+=1
-                    #if flag == 3000:
-                    #    print("write!!!!!!!!!!!!!")
-                    #    f = open("a.txt",'wb')
-                    #    numpy.savetxt("a.txt", a, fmt='%f',delimiter=' ')
-                    #    f.close()
-                    self.JointLasPos = self.JointCmdPos.copy()
-                    self.JointLasVel = self.JointCmdVel
-                    time_las = time_now
-                    message = self.packRobotCommand()
-                    self.socket_communication.send(message)
+                        self.Command = ROBOT_STATE.RUNNING_STATE_ONLINE
+                        self.JointCmdPos = self.action_server.JointCmdPos.copy()
+                        self.action_server.JointCurPos = self.JointCurPos
+                        self.action_server.JointCurVel = self.JointCurVel
+                        time_now = self.action_server.tx
+                        time_dt = time_now - time_las
+                        if time_dt == 0:
+                            flag_1 +=1
+                            if flag_1 >1:
+                                self.JointCmdVel = (self.JointCmdPos - self.JointLasPos) / self.dt + 0.01 * (self.JointCmdPos - self.JointCurPos) / self.dt
+                            else:
+                                self.JointCmdVel = self.JointLasVel
+                        elif time_dt > 0.07:
+                            self.JointCmdVel = self.JointLasVel
+                        else:
+                            flag_1 = 0
+                            self.JointCmdVel = (self.JointCmdPos - self.JointLasPos) / self.dt + 0.01 * (self.JointCmdPos - self.JointCurPos) / self.dt
+                        #self.JointCmdVel = (self.JointCmdPos - self.JointLasPos) / time_dt    #+ 0.01 * (self.JointCmdPos - self.JointCurPos) / self.dt
+                        
+                        #print(type(b))
+                        a = numpy.append(a,[[flag, self.JointCmdPos[0], self.JointLasPos[0], self.JointCmdVel[0], time_now]], axis=0)
+                        flag+=1
+                        #if flag == 3000:
+                        #    print("write!!!!!!!!!!!!!")
+                        #    f = open("a.txt",'wb')
+                        #    numpy.savetxt("a.txt", a, fmt='%f',delimiter=' ')
+                        #    f.close()
+                        self.JointLasPos = self.JointCmdPos.copy()
+                        self.JointLasVel = self.JointCmdVel
+                        time_las = time_now
+                        if self.is_braked_:
+                            self.JointCurVel[4] = 0.0
+                            self.JointCurVel[5] = 0.0
+                        message = self.packRobotCommand()
+                        self.socket_communication.send(message)
 
-            self.pub.publish(self.joint_states)
-            self.rate.sleep()
+                self.pub.publish(self.joint_states)
+                self.rate.sleep()
 
-        self.Command = ROBOT_STATE.RUNNING_STATE_HOLDON
-        message = self.packRobotCommand()
-        self.socket_communication.send(message)
-        self.socket_communication.close()
+            self.Command = ROBOT_STATE.RUNNING_STATE_HOLDON
+            message = self.packRobotCommand()
+            self.socket_communication.send(message)
+            self.socket_communication.close()
 
+    
 if __name__ == '__main__':
     try:
         if len(sys.argv) > 1:
