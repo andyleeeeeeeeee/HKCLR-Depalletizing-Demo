@@ -50,10 +50,11 @@
     <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
     <end_effector name="gripper" parent_link="robot_link6" group="gripper"/>
     <!--VIRTUAL JOINT: Purpose: this element defines a virtual joint between a robot link and an external frame of reference (considered fixed with respect to the robot)-->
-    <virtual_joint name="virtual_joint" type="fixed" parent_frame="world" child_link="robot_bottom"/>
+    <!-- <virtual_joint name="virtual_joint" type="fixed" parent_frame="world" child_link="robot_bottom"/> -->
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
     <disable_collisions link1="robot_gripper" link2="robot_link4" reason="Never"/>
-    <disable_collisions link1="robot_gripper" link2="robot_link5" reason="Adjacent"/>
+    <disable_collisions link1="robot_gripper" link2="robot_link5" reason="Never"/>
+    <disable_collisions link1="robot_gripper" link2="robot_link6" reason="Adjacent"/>
     <disable_collisions link1="robot_link0" link2="robot_link1" reason="Adjacent"/>
     <disable_collisions link1="robot_link0" link2="robot_link2" reason="Never"/>
     <disable_collisions link1="robot_link1" link2="robot_link2" reason="Adjacent"/>
@@ -63,6 +64,6 @@
     <disable_collisions link1="robot_link3" link2="robot_link4" reason="Adjacent"/>
     <disable_collisions link1="robot_link3" link2="robot_link5" reason="Never"/>
     <disable_collisions link1="robot_link4" link2="robot_link5" reason="Adjacent"/>
-    <disable_collisions link1="robot_link4" link2="robot_gripper" reason="Never"/>
-    <disable_collisions link1="robot_link5" link2="robot_gripper" reason="Never"/>
+    <disable_collisions link1="robot_link4" link2="robot_link6" reason="Never"/>
+    <disable_collisions link1="robot_link5" link2="robot_link6" reason="Adjacent"/>
 </robot>
