@@ -46,7 +46,7 @@
   </link>
   <!-- joint1 -->
   <joint name="robot_joint1" type="prismatic">
-    <origin xyz="0.157 0 0.48" rpy="0 0 0" />
+    <origin xyz="0.157 0 0.566" rpy="0 0 0" />
     <parent link="robot_link0"/>
     <child link="robot_link1"/>
     <axis xyz="0 0 1"/>
