@@ -32,12 +32,29 @@ class NaiveDepalletizingPlanner(object):
 
     def picking_plan(self, obj_pose):
         # reach the limit in z-axis
-        MaxZ = 2.424
-        MinZ = 0.49
+        # MaxZ_buffer = 2.245
+        # MaxZ = 2.3449
+        MaxZ = 2.245
+        # MinZ_buffer = 0.366
+        # MinZ = 0.266
+        MinZ = 0.366
+        # if obj_pose[2, 3] > MaxZ_buffer:
+        #     # when the gripper is on the limit of side pick, we need to rotate it 90 degree, to make the girpper upwards and increase Z limit
+        #     Rz90 = np.array([[0, -1, 0],
+        #                       [1, 0, 0],
+        #                       [0, 0, 1]])
+        #     obj_pose[0:3, 0:3] = np.dot(obj_pose[0:3, 0:3], Rz90)
         if obj_pose[2, 3] > MaxZ:
             rospy.logerr(
                 'Target box is too high to reach and I can only reach the MaxZ at %f m' % MaxZ)
             obj_pose[2, 3] = MaxZ
+
+        # if obj_pose[2, 3] < MinZ_buffer:
+        #     # when the gripper is on the limit of side pick, we need to rotate it 90 degree, to make the girpper downwards and decrease Z limit
+        #     RzMinus90 = np.array([[0, 1, 0],
+        #                       [-1, 0, 0],
+        #                       [0, 0, 1]])
+        #     obj_pose[0:3, 0:3] = np.dot(obj_pose[0:3, 0:3], RzMinus90)
         if obj_pose[2, 3] < MinZ:
             rospy.logerr(
                 'Target box is too low to reach and I can only reach the MinZ at %f m' % MinZ)
@@ -173,12 +190,14 @@ class DepalletizingHelper(object):
         # Important Note!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # x has to be in 0.83 to 0.91m
         # |y| has to be smaller than 0.95m, if y >= 0, is on left; if y<0, is on right.
-        # z has to be within 0.49m to 2.424m
+        # z has to be within 0.366m to 2.245m
         ## self.goalpoints = [[x1,y1,z1],[x2,y2,z2],...,...,[xn,yn,zn]]
         # self.goalpoints = [[0.83,0.95,0.7],[0.83,0.65,0.7],[0.83,0.35,0.7],[0.83,0.05,0.7],[0.91,0.95,0.7],[0.91,0.65,0.7],[0.91,0.35,0.7],[0.91,0.05,0.7]]
-        # self.goalpoints = [[0.91,0.95,2.4],[0.91,-0.95,2.4],[0.91,0.95,0.5],[0.91,-0.95,0.5]]
-        self.goalpoints = [[0.9, 0.2, 0.7], [0.9, 0.2, 0.7], [
-            0.9, 0.2, 0.7], [0.9, 0.2, 0.7], [0.9, 0.2, 0.7]]
+        self.goalpoints = [[0.91,0.95,0.366],[0.91,0.95,2.245],[0.91,-0.95,0.366],[0.91,-0.95,2.245]]
+        # self.goalpoints = [[0.9, 0.2, 0.7], [0.9, 0.2, 0.7], [
+        #     0.9, 0.2, 0.7], [0.9, 0.2, 0.7], [0.9, 0.2, 0.7]]
+
+
         self.goalpointcnt = 0
 
         # enabled_clients
@@ -413,9 +432,9 @@ class DepalletizingHelper(object):
         else:
             rospy.logwarn('Get point cloud client is not enabled, if you want to use vision, please make sure smart eye node is running')
             # Important Note!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            # x has to be nearly 0.9m
+            # x has to be in 0.83 to 0.91m
             # |y| has to be smaller than 0.95m, if y >= 0, is on left; if y<0, is on right.
-            # z has to be within 0.49m to 2.424m
+            # z has to be within 0.366m to 2.245m
             if self.goalpointcnt < len(self.goalpoints):
                 obj_pose.position.x = self.goalpoints[self.goalpointcnt][0]
                 obj_pose.position.y = self.goalpoints[self.goalpointcnt][1]
